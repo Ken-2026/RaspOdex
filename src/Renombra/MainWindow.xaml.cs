@@ -410,6 +410,7 @@ public partial class MainWindow : Window
         SearchBox.Clear();
         ReplacementBox.Clear();
         TemplateBox.Clear();
+        LocationBox.Clear();
         PresetBox.SelectedIndex = 0;
         RegexCheck.IsChecked = false;
         MatchCaseCheck.IsChecked = false;
@@ -450,7 +451,8 @@ public partial class MainWindow : Window
             Casing: (TextCase)Math.Max(CaseBox.SelectedIndex, 0),
             Number: NumberCheck.IsChecked == true,
             Start: start,
-            Digits: digits);
+            Digits: digits,
+            Location: LocationBox.Text);
         return true;
     }
 

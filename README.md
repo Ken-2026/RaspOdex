@@ -21,7 +21,7 @@ Windows puede bloquear la ejecución de compilaciones sin firma según la polít
 
 1. Añade archivos o arrástralos a Renombra.
 2. Selecciona una foto y abre **Datos EXIF**. Pulsa un campo para incorporarlo a la plantilla.
-3. Escribe el texto fijo y los separadores que quieras conservar. Por ejemplo, `Viaje_{fecha:yyyyMMdd}_{camara}_{n}` puede generar `Viaje_20250510_Nikon D750_001.jpg`. El número sigue el orden de la lista.
+3. Escribe el texto fijo y los separadores que quieras conservar. Para un viaje completo, escribe `Indonesia` en **Lugar para este lote** y usa `{lugar}_{fecha:yyyyMMdd}_{nombre}`. Por ejemplo, puede generar `Indonesia_20250510_DSC_0001.jpg`. El número sigue el orden de la lista.
 4. Revisa la vista previa. Si falta un dato requerido, ajusta la plantilla o quita de la lista el archivo que muestra el error. Pulsa **Renombrar** cuando esté listo.
 
 Pulsa **Guardar…** junto al selector de plantillas para conservar la combinación. Las plantillas propias se guardan en un archivo JSON junto a la aplicación. Puedes deshacer los lotes durante la sesión. ExifTool lee los metadatos en el equipo. Renombrar modifica los nombres de los archivos.
@@ -29,6 +29,7 @@ Pulsa **Guardar…** junto al selector de plantillas para conservar la combinaci
 | Campo | Valor |
 | --- | --- |
 | `{fecha}` | Fecha de captura disponible. Admite formatos como `{fecha:yyyyMMdd}`. |
+| `{lugar}` | Lugar fijo escrito para el lote, como `Indonesia`, `Bali` o `IND`. |
 | `{fabricante}`, `{camara}` | Fabricante y modelo de cámara. |
 | `{objetivo}`, `{iso}` | Objetivo y sensibilidad ISO. |
 | `{focal}`, `{apertura}`, `{exposicion}` | Distancia focal, apertura y tiempo de exposición. |

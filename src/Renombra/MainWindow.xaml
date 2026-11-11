@@ -129,7 +129,13 @@
                                     ToolTip="Fecha de captura del archivo multimedia. Admite {fecha:yyyyMMdd}." />
                             <Button Content="{}{camara}" Style="{StaticResource TokenButton}" Click="OnToken"
                                     ToolTip="Modelo de cámara o dispositivo." />
+                            <Button Content="{}{lugar}" Style="{StaticResource TokenButton}" Click="OnToken"
+                                    ToolTip="Lugar escrito para todo este lote. Ejemplo: Indonesia." />
                         </WrapPanel>
+                        <Label Content="Lugar para este lote" Target="{Binding ElementName=LocationBox}" Style="{StaticResource FieldLabel}" />
+                        <TextBox x:Name="LocationBox" AutomationProperties.Name="Lugar para este lote" TextChanged="OnRuleChanged"
+                                 ToolTip="Escribe un lugar fijo, como Indonesia, Bali o IND. Se inserta con {lugar}."
+                                 Margin="0,0,0,8" />
                         <Expander Header="Todos los campos" Foreground="{StaticResource Muted}" Margin="0,0,0,6">
                             <StackPanel Margin="0,6,0,0">
                                 <WrapPanel>

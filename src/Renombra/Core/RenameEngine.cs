@@ -60,7 +60,8 @@ public sealed record RenameOptions(
     TextCase Casing = TextCase.Unchanged,
     bool Number = false,
     int Start = 1,
-    int Digits = 3);
+    int Digits = 3,
+    string Location = "");
 
 public enum RenameStatus { Unchanged, Ready, Error }
 
@@ -271,6 +272,7 @@ public static class RenameEngine
                     case "fecha": return FormatDate(file.Metadata?.DateTaken, format, "fecha de captura");
                     case "modificado": return FormatDate(file.Modified, format, "fecha de modificación");
                     case "creado": return FormatDate(file.Created, format, "fecha de creación");
+                    case "lugar": return FormatLocation(options.Location);
                     default: return FormatMetadata(file.Metadata, key);
                 }
             });
@@ -359,6 +361,15 @@ public static class RenameEngine
         var cleaned = CleanMetadata(value);
         if (cleaned.Length == 0)
             throw new FormatException($"El campo «{field.Label}» no contiene texto válido para un nombre de archivo.");
+
+        return cleaned;
+    }
+
+    private static string FormatLocation(string value)
+    {
+        var cleaned = CleanMetadata(value);
+        if (cleaned.Length == 0)
+            throw new FormatException("Escribe un lugar para usar el campo {lugar}.");
 
         return cleaned;
     }
