@@ -17,6 +17,8 @@ public sealed record FileMetadata(DateTime? DateTaken = null, string Camera = ""
     public string FocalLength { get; init; } = "";
     public string Aperture { get; init; } = "";
     public string Exposure { get; init; } = "";
+    public double? Latitude { get; init; }
+    public double? Longitude { get; init; }
 }
 
 public sealed record ExifField(string Token, string Label, Func<FileMetadata, string> ReadValue);
@@ -34,6 +36,8 @@ public static class ExifFields
         new("focal", "Distancia focal", metadata => metadata.FocalLength),
         new("apertura", "Apertura (f/)", metadata => metadata.Aperture),
         new("exposicion", "Tiempo de exposición", metadata => metadata.Exposure),
+        new("latitud", "Latitud GPS", metadata => FormatCoordinate(metadata.Latitude)),
+        new("longitud", "Longitud GPS", metadata => FormatCoordinate(metadata.Longitude)),
         new("ancho", "Ancho (px)", metadata => metadata.Width?.ToString(CultureInfo.InvariantCulture) ?? ""),
         new("alto", "Alto (px)", metadata => metadata.Height?.ToString(CultureInfo.InvariantCulture) ?? "")
     ]);
@@ -45,6 +49,8 @@ public static class ExifFields
     public static bool IsUsedIn(string template) => RenameEngine.TemplateUses(template, Tokens);
 
     internal static ExifField? Find(string token) => FieldsByToken.GetValueOrDefault(token);
+
+    private static string FormatCoordinate(double? coordinate) => coordinate?.ToString("0.######", CultureInfo.InvariantCulture) ?? "";
 }
 
 public enum TextCase { Unchanged, Lower, Upper, Title }
@@ -61,7 +67,11 @@ public sealed record RenameOptions(
     bool Number = false,
     int Start = 1,
     int Digits = 3,
-    string Location = "");
+    string Location = "",
+    string Country = "",
+    string CountryCode = "",
+    string Indicator = "",
+    string City = "");
 
 public enum RenameStatus { Unchanged, Ready, Error }
 
@@ -273,6 +283,10 @@ public static class RenameEngine
                     case "modificado": return FormatDate(file.Modified, format, "fecha de modificación");
                     case "creado": return FormatDate(file.Created, format, "fecha de creación");
                     case "lugar": return FormatLocation(options.Location);
+                    case "pais": return FormatLocationPart(options.Country, "país");
+                    case "codigo_pais": return FormatLocationPart(options.CountryCode, "código de país");
+                    case "indicador": return FormatLocationPart(options.Indicator, "indicador");
+                    case "ciudad": return FormatLocationPart(options.City, "ciudad");
                     default: return FormatMetadata(file.Metadata, key);
                 }
             });
@@ -370,6 +384,15 @@ public static class RenameEngine
         var cleaned = CleanMetadata(value);
         if (cleaned.Length == 0)
             throw new FormatException("Escribe un lugar para usar el campo {lugar}.");
+
+        return cleaned;
+    }
+
+    private static string FormatLocationPart(string value, string label)
+    {
+        var cleaned = CleanMetadata(value);
+        if (cleaned.Length == 0)
+            throw new FormatException($"El campo «{label}» no está definido para este lote.");
 
         return cleaned;
     }

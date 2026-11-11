@@ -92,7 +92,9 @@ public static class ExifMetadataReader
                         Iso = ReadScalar(item, "ISO"),
                         FocalLength = ReadScalar(item, "FocalLength"),
                         Aperture = ReadScalar(item, "FNumber"),
-                        Exposure = ReadScalar(item, "ExposureTime")
+                        Exposure = ReadScalar(item, "ExposureTime"),
+                        Latitude = ReadCoordinate(item, "GPSLatitude"),
+                        Longitude = ReadCoordinate(item, "GPSLongitude")
                     };
                     if (ExifFields.All.Any(field => field.ReadValue(metadata).Length > 0))
                         result[path] = metadata;
@@ -131,7 +133,7 @@ public static class ExifMetadataReader
         [
             "-config", "", "-charset", "filename=UTF8", "-json", "-q", "-Make", "-Model",
             "-CameraModelName", "-ImageWidth#", "-ImageHeight#", "-SourceImageWidth#", "-SourceImageHeight#",
-            "-LensModel", "-ISO", "-FocalLength", "-FNumber", "-ExposureTime"
+            "-LensModel", "-ISO", "-FocalLength", "-FNumber", "-ExposureTime", "-GPSLatitude#", "-GPSLongitude#"
         ];
         foreach (string option in options)
             startInfo.ArgumentList.Add(option);
@@ -272,5 +274,12 @@ public static class ExifMetadataReader
         return element.ValueKind == JsonValueKind.String
             && int.TryParse(element.GetString(), NumberStyles.None, CultureInfo.InvariantCulture, out int textNumber)
             && textNumber > 0 ? textNumber : null;
+    }
+
+    private static double? ReadCoordinate(JsonElement item, string tag)
+    {
+        string value = ReadScalar(item, tag);
+        return double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out double coordinate)
+            && coordinate is >= -180 and <= 180 ? coordinate : null;
     }
 }

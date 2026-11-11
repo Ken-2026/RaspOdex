@@ -65,6 +65,26 @@
                           VerticalAlignment="Center" Margin="14,0,0,0"
                           ToolTip="Al añadir una carpeta, también busca archivos en sus subcarpetas." />
                 <WrapPanel>
+                    <Menu Margin="0,0,10,0" VerticalAlignment="Center" Background="Transparent">
+                        <MenuItem Header="_Archivo">
+                            <MenuItem Header="Añadir archivos" Click="OnAddFiles" />
+                            <MenuItem Header="Añadir carpeta" Click="OnAddFolder" />
+                            <Separator />
+                            <MenuItem Header="Vaciar lista" Click="OnClear" />
+                        </MenuItem>
+                        <MenuItem Header="_Renombrar">
+                            <MenuItem Header="Fecha y nombre" Click="OnUseDateName" />
+                            <MenuItem Header="Viaje con país y fecha" Click="OnUseTravelTemplate" />
+                            <MenuItem Header="Restablecer reglas" Click="OnResetRules" />
+                        </MenuItem>
+                        <MenuItem Header="_Ubicación">
+                            <MenuItem Header="Buscar país y ciudad desde el GPS de la foto seleccionada…" Click="OnLookupLocation" />
+                            <MenuItem Header="Borrar ubicación del lote" Click="OnClearLocation" />
+                        </MenuItem>
+                        <MenuItem Header="A_yuda">
+                            <MenuItem Header="Guía de campos y ubicación" Click="OnShowHelp" />
+                        </MenuItem>
+                    </Menu>
                     <Button x:Name="AddFilesButton" Content="Añadir archivos" Click="OnAddFiles"
                             Margin="0,0,7,0" ToolTip="Ctrl+O" />
                     <Button x:Name="AddFolderButton" Content="Añadir carpeta" Click="OnAddFolder"
@@ -131,11 +151,43 @@
                                     ToolTip="Modelo de cámara o dispositivo." />
                             <Button Content="{}{lugar}" Style="{StaticResource TokenButton}" Click="OnToken"
                                     ToolTip="Lugar escrito para todo este lote. Ejemplo: Indonesia." />
+                            <Button Content="{}{pais}" Style="{StaticResource TokenButton}" Click="OnToken"
+                                    ToolTip="País aplicado al lote, manualmente o desde GPS." />
+                            <Button Content="{}{ciudad}" Style="{StaticResource TokenButton}" Click="OnToken"
+                                    ToolTip="Ciudad aplicada al lote, manualmente o desde GPS." />
+                            <Button Tag="{}{codigo_pais}" Style="{StaticResource TokenButton}" Click="OnToken"
+                                    ToolTip="Código ISO de dos letras aplicado al lote. Ejemplo: ID."><TextBlock Text="{}{codigo_pais}" /></Button>
+                            <Button Content="{}{indicador}" Style="{StaticResource TokenButton}" Click="OnToken"
+                                    ToolTip="Indicador personalizado del país o viaje. Ejemplo: IND." />
                         </WrapPanel>
-                        <Label Content="Lugar para este lote" Target="{Binding ElementName=LocationBox}" Style="{StaticResource FieldLabel}" />
+                        <Label Content="Ubicación para este lote" Target="{Binding ElementName=LocationBox}" Style="{StaticResource FieldLabel}" />
                         <TextBox x:Name="LocationBox" AutomationProperties.Name="Lugar para este lote" TextChanged="OnRuleChanged"
                                  ToolTip="Escribe un lugar fijo, como Indonesia, Bali o IND. Se inserta con {lugar}."
-                                 Margin="0,0,0,8" />
+                                 Margin="0,0,0,5" />
+                        <UniformGrid Columns="4" Margin="0,0,0,8">
+                            <StackPanel Margin="0,0,4,0">
+                                <Label Content="País" Target="{Binding ElementName=CountryBox}" Style="{StaticResource FieldLabel}" />
+                                <TextBox x:Name="CountryBox" AutomationProperties.Name="País para este lote" TextChanged="OnRuleChanged" />
+                            </StackPanel>
+                            <StackPanel Margin="4,0">
+                                <Label Content="Ciudad" Target="{Binding ElementName=CityBox}" Style="{StaticResource FieldLabel}" />
+                                <TextBox x:Name="CityBox" AutomationProperties.Name="Ciudad para este lote" TextChanged="OnRuleChanged" />
+                            </StackPanel>
+                            <StackPanel Margin="4,0,0,0">
+                                <Label Content="Código" Target="{Binding ElementName=CountryCodeBox}" Style="{StaticResource FieldLabel}" />
+                                <TextBox x:Name="CountryCodeBox" AutomationProperties.Name="Código de país para este lote" TextChanged="OnRuleChanged"
+                                         ToolTip="Código ISO de dos letras, por ejemplo ES o ID." />
+                            </StackPanel>
+                            <StackPanel Margin="4,0,0,0">
+                                <Label Content="Indicador" Target="{Binding ElementName=IndicatorBox}" Style="{StaticResource FieldLabel}" />
+                                <TextBox x:Name="IndicatorBox" AutomationProperties.Name="Indicador personalizado" TextChanged="OnRuleChanged"
+                                         ToolTip="Tu abreviatura preferida, por ejemplo IND." />
+                            </StackPanel>
+                        </UniformGrid>
+                        <TextBlock Text="Para buscar país y ciudad desde GPS, usa Ubicación en el menú superior. Puedes editar cualquier dato antes de renombrar."
+                                   Foreground="{StaticResource Muted}" FontSize="11" Margin="0,-4,0,3" TextWrapping="Wrap" />
+                        <TextBlock Text="Las consultas GPS usan OpenStreetMap © contributors."
+                                   Foreground="{StaticResource Muted}" FontSize="11" Margin="0,0,0,7" TextWrapping="Wrap" />
                         <Expander Header="Todos los campos" Foreground="{StaticResource Muted}" Margin="0,0,0,6">
                             <StackPanel Margin="0,6,0,0">
                                 <WrapPanel>

@@ -21,8 +21,9 @@ Windows puede bloquear la ejecución de compilaciones sin firma según la polít
 
 1. Añade archivos o arrástralos a Renombra.
 2. Selecciona una foto y abre **Datos EXIF**. Pulsa un campo para incorporarlo a la plantilla.
-3. Escribe el texto fijo y los separadores que quieras conservar. Para un viaje completo, escribe `Indonesia` en **Lugar para este lote** y usa `{lugar}_{fecha:yyyyMMdd}_{nombre}`. Por ejemplo, puede generar `Indonesia_20250510_DSC_0001.jpg`. El número sigue el orden de la lista.
-4. Revisa la vista previa. Si falta un dato requerido, ajusta la plantilla o quita de la lista el archivo que muestra el error. Pulsa **Renombrar** cuando esté listo.
+3. Escribe el texto fijo y los separadores que quieras conservar. Para un viaje completo, escribe `Indonesia` en **Ubicación para este lote** y usa `{lugar}_{fecha:yyyyMMdd}_{nombre}`. Por ejemplo, puede generar `Indonesia_20250510_DSC_0001.jpg`. El número sigue el orden de la lista.
+4. Si la foto tiene GPS, usa **Ubicación** en el menú superior para consultar país y ciudad. Renombra pide confirmación antes de enviar las coordenadas al servicio de OpenStreetMap y completa los campos del lote. Puedes revisar o cambiar sus valores antes de renombrar.
+5. Revisa la vista previa. Si falta un dato requerido, ajusta la plantilla o quita de la lista el archivo que muestra el error. Pulsa **Renombrar** cuando esté listo.
 
 Pulsa **Guardar…** junto al selector de plantillas para conservar la combinación. Las plantillas propias se guardan en un archivo JSON junto a la aplicación. Puedes deshacer los lotes durante la sesión. ExifTool lee los metadatos en el equipo. Renombrar modifica los nombres de los archivos.
 
@@ -30,12 +31,19 @@ Pulsa **Guardar…** junto al selector de plantillas para conservar la combinaci
 | --- | --- |
 | `{fecha}` | Fecha de captura disponible. Admite formatos como `{fecha:yyyyMMdd}`. |
 | `{lugar}` | Lugar fijo escrito para el lote, como `Indonesia`, `Bali` o `IND`. |
+| `{pais}`, `{ciudad}`, `{codigo_pais}` | Datos de ubicación del lote. El menú puede completarlos a partir del GPS de la foto seleccionada. El código consultado sigue ISO de dos letras, como `ES` o `ID`. |
+| `{indicador}` | Abreviatura personal del lote. Por ejemplo, escribe `IND` si ésa es tu convención para Indonesia. Es independiente del código ISO que se obtiene automáticamente. |
 | `{fabricante}`, `{camara}` | Fabricante y modelo de cámara. |
 | `{objetivo}`, `{iso}` | Objetivo y sensibilidad ISO. |
 | `{focal}`, `{apertura}`, `{exposicion}` | Distancia focal, apertura y tiempo de exposición. |
+| `{latitud}`, `{longitud}` | Coordenadas GPS guardadas dentro de la foto. |
 | `{ancho}`, `{alto}` | Dimensiones en píxeles. |
 | `{nombre}`, `{ext}`, `{n}` | Nombre base, extensión original sin punto y número. |
 | `{creado}`, `{modificado}` | Fechas de creación y modificación del archivo. |
+
+### Privacidad de las consultas GPS
+
+Al elegir **Ubicación > Buscar país y ciudad desde el GPS de la foto seleccionada**, Renombra pide permiso y envía únicamente las dos coordenadas de esa foto al servicio público de geocodificación inversa de OpenStreetMap, de una en una. No sube la foto, su nombre ni otros metadatos. La consulta es opcional: también puedes escribir país, ciudad, código e indicador a mano. Datos de ubicación © [OpenStreetMap contributors](https://www.openstreetmap.org/copyright), mediante [Nominatim](https://nominatim.org/).
 
 ## Compilar y contribuir
 

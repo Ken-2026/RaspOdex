@@ -263,10 +263,127 @@ public partial class MainWindow : Window
 
     private void OnToken(object sender, RoutedEventArgs e)
     {
-        if (sender is not Button { Content: string token })
+        if (sender is not Button button)
+            return;
+
+        var token = button.Tag as string ?? button.Content as string;
+        if (string.IsNullOrWhiteSpace(token))
             return;
 
         InsertToken(token);
+    }
+
+    private void OnUseDateName(object sender, RoutedEventArgs e)
+    {
+        _ready = false;
+        TemplateBox.Text = "{fecha:yyyyMMdd}_{nombre}";
+        _ready = true;
+        RequestPreview();
+    }
+
+    private void OnUseTravelTemplate(object sender, RoutedEventArgs e)
+    {
+        _ready = false;
+        TemplateBox.Text = "{pais}_{ciudad}_{fecha:yyyyMMdd}_{nombre}";
+        _ready = true;
+        RequestPreview();
+    }
+
+    private async void OnLookupLocation(object sender, RoutedEventArgs e)
+    {
+        if (_busy || FilesGrid.SelectedItem is not DisplayRow selected)
+        {
+            SetStatus("Selecciona primero una foto con GPS para buscar su ubicación.", true);
+            return;
+        }
+
+        var index = _files.FindIndex(file => PathComparer.Equals(file.FullPath, selected.Row.File.FullPath));
+        if (index < 0)
+            return;
+
+        var file = _files[index];
+        if (file.Metadata is null && ExifMetadataReader.IsAvailable)
+        {
+            SetBusy(true);
+            SetStatus("Leyendo el GPS de la foto seleccionada…");
+            try
+            {
+                var metadata = await ExifMetadataReader.ReadAsync([file.FullPath]);
+                file = file with { Metadata = metadata.GetValueOrDefault(file.FullPath) ?? EmptyMetadata };
+                _files[index] = file;
+                RenderMetadata(file.Metadata);
+            }
+            catch (Exception ex)
+            {
+                ShowError("No se pudo leer el GPS", ex.Message);
+                return;
+            }
+            finally
+            {
+                SetBusy(false);
+            }
+        }
+
+        if (file.Metadata?.Latitude is not double latitude || file.Metadata.Longitude is not double longitude)
+        {
+            SetStatus("La foto seleccionada no contiene coordenadas GPS.", true);
+            return;
+        }
+
+        var prompt = "Se enviarán las coordenadas GPS de la foto seleccionada a OpenStreetMap para obtener país y ciudad. " +
+            "No se envían la foto ni su nombre. ¿Quieres continuar?";
+        if (MessageBox.Show(this, prompt, "Buscar ubicación desde GPS", MessageBoxButton.YesNo,
+                MessageBoxImage.Question) != MessageBoxResult.Yes)
+            return;
+
+        SetBusy(true);
+        SetStatus("Buscando país y ciudad desde GPS…");
+        try
+        {
+            var location = await LocationLookup.ReverseAsync(latitude, longitude);
+            _ready = false;
+            CountryBox.Text = location.Country;
+            CountryCodeBox.Text = location.CountryCode;
+            CityBox.Text = location.City;
+            if (string.IsNullOrWhiteSpace(LocationBox.Text))
+                LocationBox.Text = location.Label;
+            _ready = true;
+            SetStatus($"Ubicación aplicada al lote: {location.Label}.");
+            RequestPreview();
+        }
+        catch (Exception ex)
+        {
+            ShowError("No se pudo buscar la ubicación", ex.Message);
+        }
+        finally
+        {
+            SetBusy(false);
+        }
+    }
+
+    private void OnClearLocation(object sender, RoutedEventArgs e)
+    {
+        _ready = false;
+        LocationBox.Clear();
+        CountryBox.Clear();
+        CountryCodeBox.Clear();
+        IndicatorBox.Clear();
+        CityBox.Clear();
+        _ready = true;
+        RequestPreview("Se borraron los datos de ubicación del lote.");
+    }
+
+    private void OnShowHelp(object sender, RoutedEventArgs e)
+    {
+        MessageBox.Show(this,
+            "Campos habituales\n\n" +
+            "{fecha:yyyyMMdd} usa la fecha de captura.\n" +
+            "{camara}, {objetivo}, {iso}, {focal} y {apertura} usan EXIF.\n" +
+            "{lugar} usa el texto que escribas para todo el lote.\n" +
+            "{pais}, {ciudad} y {codigo_pais} usan los campos de ubicación del lote. {codigo_pais} es ISO de dos letras, como ES o ID.\n" +
+            "{indicador} usa tu abreviatura propia, por ejemplo IND.\n\n" +
+            "En Ubicación > Buscar país y ciudad desde el GPS de la foto seleccionada puedes completar esos campos cuando la imagen tenga GPS. La consulta envía solo las coordenadas a OpenStreetMap.",
+            "Ayuda de Renombra", MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
     private void OnExifValue(object sender, RoutedEventArgs e)
@@ -411,6 +528,10 @@ public partial class MainWindow : Window
         ReplacementBox.Clear();
         TemplateBox.Clear();
         LocationBox.Clear();
+        CountryBox.Clear();
+        CountryCodeBox.Clear();
+        IndicatorBox.Clear();
+        CityBox.Clear();
         PresetBox.SelectedIndex = 0;
         RegexCheck.IsChecked = false;
         MatchCaseCheck.IsChecked = false;
@@ -452,7 +573,11 @@ public partial class MainWindow : Window
             Number: NumberCheck.IsChecked == true,
             Start: start,
             Digits: digits,
-            Location: LocationBox.Text);
+            Location: LocationBox.Text,
+            Country: CountryBox.Text,
+            CountryCode: CountryCodeBox.Text,
+            Indicator: IndicatorBox.Text,
+            City: CityBox.Text);
         return true;
     }
 
