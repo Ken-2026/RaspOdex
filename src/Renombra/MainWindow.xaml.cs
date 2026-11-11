@@ -289,7 +289,13 @@ public partial class MainWindow : Window
         RequestPreview();
     }
 
-    private async void OnLookupLocation(object sender, RoutedEventArgs e)
+    private async void OnLookupLocationOffline(object sender, RoutedEventArgs e) =>
+        await LookupLocationAsync(online: false);
+
+    private async void OnLookupLocation(object sender, RoutedEventArgs e) =>
+        await LookupLocationAsync(online: true);
+
+    private async Task LookupLocationAsync(bool online)
     {
         if (_busy || FilesGrid.SelectedItem is not DisplayRow selected)
         {
@@ -330,17 +336,22 @@ public partial class MainWindow : Window
             return;
         }
 
-        var prompt = "Se enviarán las coordenadas GPS de la foto seleccionada a OpenStreetMap para obtener país y ciudad. " +
-            "No se envían la foto ni su nombre. ¿Quieres continuar?";
-        if (MessageBox.Show(this, prompt, "Buscar ubicación desde GPS", MessageBoxButton.YesNo,
-                MessageBoxImage.Question) != MessageBoxResult.Yes)
-            return;
+        if (online)
+        {
+            var prompt = "Se enviarán las coordenadas GPS de la foto seleccionada a OpenStreetMap para obtener país y ciudad. " +
+                "No se envían la foto ni su nombre. ¿Quieres continuar?";
+            if (MessageBox.Show(this, prompt, "Buscar ubicación desde GPS", MessageBoxButton.YesNo,
+                    MessageBoxImage.Question) != MessageBoxResult.Yes)
+                return;
+        }
 
         SetBusy(true);
-        SetStatus("Buscando país y ciudad desde GPS…");
+        SetStatus(online ? "Buscando país y ciudad en OpenStreetMap…" : "Buscando localidad sin Internet en GeoNames…");
         try
         {
-            var location = await LocationLookup.ReverseAsync(latitude, longitude);
+            var location = online
+                ? await LocationLookup.ReverseAsync(latitude, longitude)
+                : await GeoNamesOfflineLookup.ReverseAsync(latitude, longitude);
             _ready = false;
             CountryBox.Text = location.Country;
             CountryCodeBox.Text = location.CountryCode;
@@ -348,7 +359,7 @@ public partial class MainWindow : Window
             if (string.IsNullOrWhiteSpace(LocationBox.Text))
                 LocationBox.Text = location.Label;
             _ready = true;
-            SetStatus($"Ubicación aplicada al lote: {location.Label}.");
+            SetStatus($"Ubicación aplicada al lote: {location.Label} ({(online ? "OpenStreetMap" : "GeoNames local")}).");
             RequestPreview();
         }
         catch (Exception ex)
@@ -382,7 +393,7 @@ public partial class MainWindow : Window
             "{lugar} usa el texto que escribas para todo el lote.\n" +
             "{pais}, {ciudad} y {codigo_pais} usan los campos de ubicación del lote. {codigo_pais} es ISO de dos letras, como ES o ID.\n" +
             "{indicador} usa tu abreviatura propia, por ejemplo IND.\n\n" +
-            "En Ubicación > Buscar país y ciudad desde el GPS de la foto seleccionada puedes completar esos campos cuando la imagen tenga GPS. La consulta envía solo las coordenadas a OpenStreetMap.",
+            "En Ubicación puedes buscar sin Internet con el índice local de GeoNames. También existe una consulta opcional en línea que envía solo las coordenadas a OpenStreetMap después de pedir permiso.",
             "Ayuda de Renombra", MessageBoxButton.OK, MessageBoxImage.Information);
     }
 

@@ -45,6 +45,24 @@ Pulsa **Guardar…** junto al selector de plantillas para conservar la combinaci
 
 Al elegir **Ubicación > Buscar país y ciudad desde el GPS de la foto seleccionada**, Renombra pide permiso y envía únicamente las dos coordenadas de esa foto al servicio público de geocodificación inversa de OpenStreetMap, de una en una. No sube la foto, su nombre ni otros metadatos. La consulta es opcional: también puedes escribir país, ciudad, código e indicador a mano. Datos de ubicación © [OpenStreetMap contributors](https://www.openstreetmap.org/copyright), mediante [Nominatim](https://nominatim.org/).
 
+## Búsqueda local sin Internet con GeoNames
+
+La versión 1.3 puede resolver la localidad directamente en el equipo mediante un índice SQLite generado a partir de `allCountries.zip`. La base completa no se incluye en GitHub porque ocupa cientos de megabytes.
+
+1. Descarga el volcado mundial `allCountries.zip` desde [GeoNames](https://www.geonames.org/export/) y guárdalo en una unidad con espacio suficiente.
+2. Ejecuta el constructor incluido, apuntando al ZIP y al destino del índice. Por ejemplo, en PowerShell:
+
+   ```powershell
+   python .\tools\Build-GeoNamesIndex.py `
+     K:\Renombra\data\GeoNames\allCountries.zip `
+     K:\Renombra\data\GeoNames\geonames.sqlite
+   ```
+
+3. Coloca `geonames.sqlite` en `data/GeoNames` junto a la carpeta de la aplicación o en la carpeta `data/GeoNames` hermana de la aplicación.
+4. En Renombra, selecciona una foto con GPS y elige **Ubicación > Buscar sin Internet con GeoNames**.
+
+El índice contiene sólo localidades pobladas y se consulta por proximidad, sin cargar los 1,7 GB de texto en memoria. El archivo generado incluye los metadatos de atribución **GeoNames, CC BY 4.0**. GeoNames se ofrece sin garantía de exactitud, actualidad o exhaustividad, por lo que los campos obtenidos se pueden corregir antes de renombrar.
+
 ## Compilar y contribuir
 
 La aplicación está escrita en C# y WPF. Consulta [cómo compilar y proponer mejoras](CONTRIBUTING.md).

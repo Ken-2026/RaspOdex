@@ -78,7 +78,9 @@
                             <MenuItem Header="Restablecer reglas" Click="OnResetRules" />
                         </MenuItem>
                         <MenuItem Header="_Ubicación">
-                            <MenuItem Header="Buscar país y ciudad desde el GPS de la foto seleccionada…" Click="OnLookupLocation" />
+                            <MenuItem Header="Buscar sin Internet con GeoNames" Click="OnLookupLocationOffline" />
+                            <MenuItem Header="Buscar en línea con OpenStreetMap…" Click="OnLookupLocation" />
+                            <Separator />
                             <MenuItem Header="Borrar ubicación del lote" Click="OnClearLocation" />
                         </MenuItem>
                         <MenuItem Header="A_yuda">
@@ -186,7 +188,7 @@
                         </UniformGrid>
                         <TextBlock Text="Para buscar país y ciudad desde GPS, usa Ubicación en el menú superior. Puedes editar cualquier dato antes de renombrar."
                                    Foreground="{StaticResource Muted}" FontSize="11" Margin="0,-4,0,3" TextWrapping="Wrap" />
-                        <TextBlock Text="Las consultas GPS usan OpenStreetMap © contributors."
+                        <TextBlock Text="Modo local: GeoNames © contributors · Modo en línea: OpenStreetMap © contributors."
                                    Foreground="{StaticResource Muted}" FontSize="11" Margin="0,0,0,7" TextWrapping="Wrap" />
                         <Expander Header="Todos los campos" Foreground="{StaticResource Muted}" Margin="0,0,0,6">
                             <StackPanel Margin="0,6,0,0">
