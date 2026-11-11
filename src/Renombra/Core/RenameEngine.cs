@@ -7,7 +7,12 @@ using Microsoft.Win32.SafeHandles;
 
 namespace Renombra.Core;
 
-public sealed record FileItem(string FullPath, DateTime Modified, DateTime Created, FileMetadata? Metadata = null);
+public sealed record FileItem(
+    string FullPath,
+    DateTime Modified,
+    DateTime Created,
+    FileMetadata? Metadata = null,
+    LocationLookupResult? ResolvedLocation = null);
 
 public sealed record FileMetadata(DateTime? DateTaken = null, string Camera = "", int? Width = null, int? Height = null)
 {
@@ -29,6 +34,12 @@ public static class ExifFields
     [
         new("fecha", "Fecha de captura", metadata =>
             metadata.DateTaken?.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture) ?? ""),
+        new("hora", "Hora de captura", metadata =>
+            metadata.DateTaken?.ToString("HH:mm:ss", CultureInfo.InvariantCulture) ?? ""),
+        new("dia_semana", "Día de la semana", metadata =>
+            metadata.DateTaken?.ToString("dddd", CultureInfo.GetCultureInfo("es-ES")) ?? ""),
+        new("fecha_segura", "Fecha de captura o modificación", metadata =>
+            metadata.DateTaken?.ToString("yyyyMMdd_HHmmss", CultureInfo.InvariantCulture) ?? ""),
         new("camara", "Cámara", metadata => metadata.Camera),
         new("fabricante", "Fabricante", metadata => metadata.Make),
         new("objetivo", "Objetivo", metadata => metadata.Lens),
@@ -71,13 +82,16 @@ public sealed record RenameOptions(
     string Country = "",
     string CountryCode = "",
     string Indicator = "",
-    string City = "");
+    string City = "",
+    string OutputFolder = "",
+    bool AutoUnique = false);
 
 public enum RenameStatus { Unchanged, Ready, Error }
 
 public sealed record RenameRow(FileItem File, string NewName, RenameStatus Status, string Detail)
 {
-    public string Destination => Path.Combine(Path.GetDirectoryName(File.FullPath) ?? "", NewName);
+    public string? OutputFolder { get; init; }
+    public string Destination => Path.Combine(OutputFolder ?? Path.GetDirectoryName(File.FullPath) ?? "", NewName);
     internal FileStamp? Snapshot { get; init; }
 }
 
@@ -110,6 +124,12 @@ public static class RenameEngine
         return false;
     }
 
+    internal static bool TemplateUsesLocation(string template) =>
+        TemplateUses(template, "lugar", "pais", "codigo_pais", "ciudad", "indicador");
+
+    internal static bool TemplateUsesGpsLocation(string template) =>
+        TemplateUses(template, "pais", "codigo_pais", "ciudad");
+
     public static IReadOnlyList<RenameRow> Preview(
         IReadOnlyList<FileItem> files, RenameOptions options, CancellationToken cancellationToken = default)
     {
@@ -134,6 +154,8 @@ public static class RenameEngine
         var rows = new List<RenameRow>(files.Count);
         var sourceGroups = new Dictionary<string, List<int>>(PathComparer);
         var destinationGroups = new Dictionary<string, List<int>>(PathComparer);
+        var reserved = new HashSet<string>(PathComparer);
+        var sourcePaths = new HashSet<string>(files.Select(file => Path.GetFullPath(file.FullPath)), PathComparer);
         for (var index = 0; index < files.Count; index++)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -146,7 +168,27 @@ public static class RenameEngine
                 var name = MakeName(file, original, options, searchPattern, index);
                 ValidateName(name);
 
-                var changed = !StringComparer.Ordinal.Equals(original, name);
+                var outputFolder = string.IsNullOrWhiteSpace(options.OutputFolder) ? Path.GetDirectoryName(source)! : Path.GetFullPath(options.OutputFolder);
+                if (!Directory.Exists(outputFolder))
+                    throw new IOException("La carpeta de salida no existe.");
+                if (!PathComparer.Equals(Path.GetPathRoot(source), Path.GetPathRoot(outputFolder)))
+                    throw new IOException("La carpeta de salida debe estar en la misma unidad que el archivo de origen.");
+                var destination = Path.Combine(outputFolder, name);
+                if (options.AutoUnique)
+                {
+                    var (baseName, extension) = SplitName(name);
+                    var suffix = 1;
+                    while (reserved.Contains(destination) ||
+                           (!PathComparer.Equals(source, destination) && (sourcePaths.Contains(destination) || Path.Exists(destination))))
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        name = $"{baseName}_{suffix++:D3}{extension}";
+                        ValidateName(name);
+                        destination = Path.Combine(outputFolder, name);
+                    }
+                    reserved.Add(destination);
+                }
+                var changed = !StringComparer.Ordinal.Equals(source, destination);
                 var snapshot = changed ? FileStamp.Capture(source) : (FileStamp?)null;
                 if (!changed && !File.Exists(source))
                     throw new IOException("El archivo ya no está disponible.");
@@ -155,9 +197,10 @@ public static class RenameEngine
                     changed ? RenameStatus.Ready : RenameStatus.Unchanged,
                     changed ? "Listo" : "Sin cambios")
                 {
-                    Snapshot = snapshot
+                    Snapshot = snapshot,
+                    OutputFolder = outputFolder
                 };
-                AddIndex(destinationGroups, Path.Combine(Path.GetDirectoryName(source)!, name), index);
+                AddIndex(destinationGroups, destination, index);
                 rows.Add(row);
             }
             catch (RegexMatchTimeoutException)
@@ -269,7 +312,7 @@ public static class RenameEngine
                 var field = part.Groups[1].Value.Split(':', 2);
                 var key = field[0].Trim().ToLowerInvariant();
                 var format = field.Length == 2 ? field[1] : null;
-                if (format is not null && key is not ("fecha" or "modificado" or "creado"))
+                if (format is not null && key is not ("fecha" or "hora" or "modificado" or "creado"))
                     throw new FormatException($"El campo {{{key}}} no admite un formato.");
 
                 switch (key)
@@ -280,13 +323,25 @@ public static class RenameEngine
                         numberInTemplate = true;
                         return FormatNumber(options, index);
                     case "fecha": return FormatDate(file.Metadata?.DateTaken, format, "fecha de captura");
+                    case "fecha_segura": return FormatDate(file.Metadata?.DateTaken ?? file.Modified, "yyyyMMdd_HHmmss", "fecha");
+                    case "hora": return FormatDate(file.Metadata?.DateTaken, format ?? "HHmmss", "hora de captura");
                     case "modificado": return FormatDate(file.Modified, format, "fecha de modificación");
                     case "creado": return FormatDate(file.Created, format, "fecha de creación");
-                    case "lugar": return FormatLocation(options.Location);
-                    case "pais": return FormatLocationPart(options.Country, "país");
-                    case "codigo_pais": return FormatLocationPart(options.CountryCode, "código de país");
+                    case "lugar":
+                        return FormatLocation(options.Location.Length > 0
+                            ? options.Location
+                            : file.ResolvedLocation?.Label ?? "");
+                    case "pais":
+                        return FormatLocationPart(options.Country.Length > 0
+                            ? options.Country
+                            : file.ResolvedLocation?.Country ?? "", "país");
+                    case "codigo_pais":
+                        return FormatLocationPart(options.CountryCode.Length > 0
+                            ? options.CountryCode
+                            : file.ResolvedLocation?.CountryCode ?? "", "código de país");
                     case "indicador": return FormatLocationPart(options.Indicator, "indicador");
-                    case "ciudad": return FormatLocationPart(options.City, "ciudad");
+                    case "ciudad":
+                        return FormatLocationPart(file.ResolvedLocation?.City ?? options.City, "ciudad");
                     default: return FormatMetadata(file.Metadata, key);
                 }
             });
@@ -354,7 +409,7 @@ public static class RenameEngine
 
         try
         {
-            return date.Value.ToString(format ?? "yyyy-MM-dd", CultureInfo.InvariantCulture);
+            return date.Value.ToString(format ?? "yyyy-MM-dd", Spanish);
         }
         catch (FormatException)
         {
@@ -455,8 +510,8 @@ public static class RenameEngine
         {
             var source = FullFilePath(move.Source);
             var destination = FullFilePath(move.Destination);
-            if (!PathComparer.Equals(Path.GetDirectoryName(source), Path.GetDirectoryName(destination)))
-                throw new IOException("Cada archivo debe permanecer en su carpeta de origen.");
+            if (!PathComparer.Equals(Path.GetPathRoot(source), Path.GetPathRoot(destination)))
+                throw new IOException("La carpeta de salida debe estar en la misma unidad que el archivo de origen.");
 
             ValidateName(Path.GetFileName(destination));
             if (StringComparer.Ordinal.Equals(source, destination))

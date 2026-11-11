@@ -2,7 +2,8 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:core="clr-namespace:Renombra.Core"
-    Title="Renombra · EXIF" Icon="Renombra.ico"
+    Title="RaspOdex · EXIF" Icon="RaspOdex.ico"
+    Background="{StaticResource Canvas}" Foreground="{StaticResource Ink}" FontSize="15" FontFamily="Segoe UI"
     Width="1160" Height="800" MinWidth="860" MinHeight="620"
     WindowStartupLocation="CenterScreen" UseLayoutRounding="True"
     AllowDrop="True" DragOver="OnDragOver" Drop="OnDrop"
@@ -10,13 +11,13 @@
 
     <Window.Resources>
         <Style x:Key="Card" TargetType="Border">
-            <Setter Property="Background" Value="White" />
+            <Setter Property="Background" Value="#152138" />
             <Setter Property="BorderBrush" Value="{StaticResource Line}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="CornerRadius" Value="10" />
         </Style>
         <Style x:Key="ColumnHeader" TargetType="DataGridColumnHeader">
-            <Setter Property="Background" Value="#F4F6FB" />
+            <Setter Property="Background" Value="#1D2C46" />
             <Setter Property="Foreground" Value="{StaticResource Muted}" />
             <Setter Property="FontWeight" Value="SemiBold" />
             <Setter Property="Padding" Value="12,9" />
@@ -52,13 +53,13 @@
                           HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Border>
                 <StackPanel>
-                    <TextBlock Text="Renombra" FontSize="24" FontWeight="SemiBold" Foreground="White" />
+                    <TextBlock Text="RaspOdex" FontSize="24" FontWeight="SemiBold" Foreground="White" />
                     <TextBlock Text="Renombrado masivo de archivos" Foreground="#C1CCED" FontSize="12" />
                 </StackPanel>
             </DockPanel>
         </Border>
 
-        <Border Grid.Row="1" Background="White" BorderBrush="{StaticResource Line}"
+        <Border Grid.Row="1" Background="#152138" BorderBrush="{StaticResource Line}"
                 BorderThickness="0,0,0,1" Padding="20,10">
             <DockPanel x:Name="FilesToolbar">
                 <CheckBox DockPanel.Dock="Right" x:Name="SubfoldersCheck" Content="Incluir subcarpetas"
@@ -66,24 +67,25 @@
                           ToolTip="Al añadir una carpeta, también busca archivos en sus subcarpetas." />
                 <WrapPanel>
                     <Menu Margin="0,0,10,0" VerticalAlignment="Center" Background="Transparent">
-                        <MenuItem Header="_Archivo">
+                        <MenuItem Header="_Archivo" Foreground="{StaticResource Ink}">
                             <MenuItem Header="Añadir archivos" Click="OnAddFiles" />
                             <MenuItem Header="Añadir carpeta" Click="OnAddFolder" />
                             <Separator />
                             <MenuItem Header="Vaciar lista" Click="OnClear" />
                         </MenuItem>
-                        <MenuItem Header="_Renombrar">
+                        <MenuItem Header="_Renombrar" Foreground="{StaticResource Ink}">
                             <MenuItem Header="Fecha y nombre" Click="OnUseDateName" />
                             <MenuItem Header="Viaje con país y fecha" Click="OnUseTravelTemplate" />
                             <MenuItem Header="Restablecer reglas" Click="OnResetRules" />
                         </MenuItem>
-                        <MenuItem Header="_Ubicación">
+                        <MenuItem Header="_Ubicación" Foreground="{StaticResource Ink}">
                             <MenuItem Header="Buscar sin Internet con GeoNames" Click="OnLookupLocationOffline" />
+                            <MenuItem Header="Resolver cada foto sin Internet (GeoNames)" Click="OnLookupAllLocationsOffline" />
                             <MenuItem Header="Buscar en línea con OpenStreetMap…" Click="OnLookupLocation" />
                             <Separator />
                             <MenuItem Header="Borrar ubicación del lote" Click="OnClearLocation" />
                         </MenuItem>
-                        <MenuItem Header="A_yuda">
+                        <MenuItem Header="A_yuda" Foreground="{StaticResource Ink}">
                             <MenuItem Header="Guía de campos y ubicación" Click="OnShowHelp" />
                         </MenuItem>
                     </Menu>
@@ -112,15 +114,24 @@
                     <StackPanel x:Name="RulesPanel" Margin="16,14">
                         <DockPanel Margin="0,0,0,12">
                             <Button DockPanel.Dock="Right" Content="Restablecer" Click="OnResetRules"
-                                    Padding="8,3" FontSize="11" />
+                                    Padding="8,3" FontSize="13" />
                             <TextBlock Text="Reglas" FontSize="17" FontWeight="SemiBold" />
                         </DockPanel>
 
                         <Label Content="_Buscar" Target="{Binding ElementName=SearchBox}" Style="{StaticResource FieldLabel}" />
+                        <Menu Background="Transparent" Margin="0,0,0,4">
+                            <MenuItem Header="Insertar patrón de búsqueda ▾" Foreground="{StaticResource Ink}">
+                                <MenuItem Header="^  — Inicio del nombre" Tag="^" Click="OnRegexInsert" />
+                                <MenuItem Header="$  — Final del nombre" Tag="$" Click="OnRegexInsert" />
+                                <MenuItem Header="\d+  — Uno o más dígitos" Tag="\d+" Click="OnRegexInsert" />
+                                <MenuItem Header=".*  — Cualquier texto" Tag=".*" Click="OnRegexInsert" />
+                                <MenuItem Header="\s+  — Uno o más espacios" Tag="\s+" Click="OnRegexInsert" />
+                            </MenuItem>
+                        </Menu>
                         <TextBox x:Name="SearchBox" AutomationProperties.Name="Buscar" TextChanged="OnRuleChanged" Margin="0,0,0,9" />
                         <Label Content="Reempla_zar por" Target="{Binding ElementName=ReplacementBox}" Style="{StaticResource FieldLabel}" />
                         <TextBox x:Name="ReplacementBox" AutomationProperties.Name="Reemplazar por" TextChanged="OnRuleChanged" Margin="0,0,0,10" />
-                        <UniformGrid Columns="2" Margin="0,0,0,2">
+                        <UniformGrid Columns="1" Margin="0,0,0,2">
                             <CheckBox x:Name="RegexCheck" Content="Expresión regular" Click="OnRuleClick" />
                             <CheckBox x:Name="MatchCaseCheck" Content="Distinguir mayús." Click="OnRuleClick"
                                       ToolTip="Distinguir mayúsculas y minúsculas al buscar." />
@@ -132,6 +143,20 @@
 
                         <Border Height="1" Background="{StaticResource Line}" Margin="0,7,0,12" />
                         <Label Content="_Plantilla" Target="{Binding ElementName=TemplateBox}" Style="{StaticResource FieldLabel}" />
+                        <Button Content="Automático · fecha y nombre" Click="OnAutomatic" Style="{StaticResource PrimaryButton}"
+                                ToolTip="Usa fecha y hora de captura, o de modificación si falta; añade un número solo para resolver coincidencias." Margin="0,0,0,7" />
+                        <CheckBox x:Name="UniqueCheck" Content="Evitar nombres repetidos" Click="OnRuleClick"
+                                  ToolTip="Añade _001, _002… si el nombre ya existe o se repite en el lote." />
+                        <TextBlock Text="Crea el nombre pulsando los campos en el orden que prefieras. Se separan automáticamente con guiones bajos."
+                                   TextWrapping="Wrap" Foreground="{StaticResource Muted}" Margin="0,0,0,8" />
+                        <Label Content="Carpeta de salida" Style="{StaticResource FieldLabel}" />
+                        <DockPanel Margin="0,0,0,4">
+                            <Button DockPanel.Dock="Right" Content="Elegir…" Click="OnChooseOutput" Margin="6,0,0,0" Padding="8,4" />
+                            <TextBox x:Name="OutputFolderBox" IsReadOnly="True" ToolTip="Déjalo vacío para conservar la carpeta original." />
+                        </DockPanel>
+                        <Button Content="Usar carpeta original" Click="OnClearOutput" HorizontalAlignment="Left" Padding="8,4" Margin="0,0,0,6" />
+                        <TextBlock Text="Vacío: carpeta original. La carpeta elegida debe estar en la misma unidad que los archivos."
+                                   TextWrapping="Wrap" Foreground="{StaticResource Muted}" FontSize="13" Margin="0,0,0,8" />
                         <DockPanel Margin="0,0,0,7">
                             <Button DockPanel.Dock="Right" x:Name="SavePresetButton" Content="Guardar…"
                                     Click="OnSavePreset" Margin="6,0,0,0" Padding="8,4"
@@ -142,23 +167,52 @@
                         </DockPanel>
                         <TextBox x:Name="TemplateBox" AutomationProperties.Name="Plantilla" TextChanged="OnRuleChanged"
                                  ToolTip="Ejemplo: {fecha:yyyyMMdd}_{nombre}_{n}" Margin="0,0,0,7" />
+                        <Menu Background="Transparent" Margin="0,0,0,7">
+                            <MenuItem Header="Añadir campo explicado ▾" Foreground="{StaticResource Ink}">
+                                <MenuItem Header="Nombre original — nombre sin extensión" Tag="{}{nombre}" Click="OnFieldMenu" />
+                                <MenuItem Header="Lugar — texto fijo del lote" Tag="{}{lugar}" Click="OnFieldMenu" />
+                                <MenuItem Header="País — del GPS o del lote" Tag="{}{pais}" Click="OnFieldMenu" />
+                                <MenuItem Header="Ciudad — localidad obtenida del GPS" Tag="{}{ciudad}" Click="OnFieldMenu" />
+                                <Separator />
+                                <MenuItem Header="Fecha de captura — año, mes y día" Tag="{}{fecha:yyyyMMdd}" Click="OnFieldMenu" />
+                                <MenuItem Header="Hora de captura — hora, minutos y segundos" Tag="{}{hora:HHmmss}" Click="OnFieldMenu" />
+                                <MenuItem Header="Día de la semana — lunes, martes…" Tag="{}{dia_semana}" Click="OnFieldMenu" />
+                                <MenuItem Header="Mes — nombre completo" Tag="{}{fecha:MMMM}" Click="OnFieldMenu" />
+                                <MenuItem Header="Año — cuatro cifras" Tag="{}{fecha:yyyy}" Click="OnFieldMenu" />
+                                <MenuItem Header="Fecha de modificación del archivo" Tag="{}{modificado:yyyyMMdd_HHmmss}" Click="OnFieldMenu" />
+                                <MenuItem Header="Fecha de creación del archivo" Tag="{}{creado:yyyyMMdd_HHmmss}" Click="OnFieldMenu" />
+                                <Separator />
+                                <MenuItem Header="Cámara — modelo del dispositivo" Tag="{}{camara}" Click="OnFieldMenu" />
+                                <MenuItem Header="Fabricante de la cámara" Tag="{}{fabricante}" Click="OnFieldMenu" />
+                                <MenuItem Header="Objetivo de la cámara" Tag="{}{objetivo}" Click="OnFieldMenu" />
+                                <MenuItem Header="ISO — sensibilidad" Tag="{}{iso}" Click="OnFieldMenu" />
+                                <MenuItem Header="Apertura" Tag="{}{apertura}" Click="OnFieldMenu" />
+                                <MenuItem Header="Exposición" Tag="{}{exposicion}" Click="OnFieldMenu" />
+                                <MenuItem Header="Distancia focal" Tag="{}{focal}" Click="OnFieldMenu" />
+                                <MenuItem Header="Ancho en píxeles" Tag="{}{ancho}" Click="OnFieldMenu" />
+                                <MenuItem Header="Alto en píxeles" Tag="{}{alto}" Click="OnFieldMenu" />
+                                <MenuItem Header="Número correlativo" Tag="{}{n}" Click="OnFieldMenu" />
+                            </MenuItem>
+                        </Menu>
                         <WrapPanel Margin="0,0,0,3">
-                            <Button Content="{}{nombre}" Style="{StaticResource TokenButton}" Click="OnToken"
+                            <Button Content="Nombre" Tag="{}{nombre}" Style="{StaticResource TokenButton}" Click="OnToken"
                                     ToolTip="Nombre tras buscar y reemplazar, sin extensión." />
-                            <Button Content="{}{n}" Style="{StaticResource TokenButton}" Click="OnToken"
+                            <Button Content="Número" Tag="{}{n}" Style="{StaticResource TokenButton}" Click="OnToken"
                                     ToolTip="Número según el orden de la lista." />
-                            <Button Content="{}{fecha}" Style="{StaticResource TokenButton}" Click="OnToken"
-                                    ToolTip="Fecha de captura del archivo multimedia. Admite {fecha:yyyyMMdd}." />
-                            <Button Content="{}{camara}" Style="{StaticResource TokenButton}" Click="OnToken"
+                            <Button Content="Fecha" Tag="{}{fecha:yyyyMMdd}" Style="{StaticResource TokenButton}" Click="OnToken"
+                                    ToolTip="Fecha y hora de captura de cada foto. Admite {fecha:yyyyMMdd_HHmmss}." />
+                            <Button Content="Hora" Tag="{}{hora:HHmmss}" Style="{StaticResource TokenButton}" Click="OnToken"
+                                    ToolTip="Hora de captura de cada foto. Admite {hora:HHmmss}." />
+                            <Button Content="Cámara" Tag="{}{camara}" Style="{StaticResource TokenButton}" Click="OnToken"
                                     ToolTip="Modelo de cámara o dispositivo." />
-                            <Button Content="{}{lugar}" Style="{StaticResource TokenButton}" Click="OnToken"
+                            <Button Content="Lugar" Tag="{}{lugar}" Style="{StaticResource TokenButton}" Click="OnToken"
                                     ToolTip="Lugar escrito para todo este lote. Ejemplo: Indonesia." />
-                            <Button Content="{}{pais}" Style="{StaticResource TokenButton}" Click="OnToken"
-                                    ToolTip="País aplicado al lote, manualmente o desde GPS." />
-                            <Button Content="{}{ciudad}" Style="{StaticResource TokenButton}" Click="OnToken"
-                                    ToolTip="Ciudad aplicada al lote, manualmente o desde GPS." />
+                            <Button Content="País" Tag="{}{pais}" Style="{StaticResource TokenButton}" Click="OnToken"
+                                    ToolTip="País de cada foto desde GPS; si no, usa el país del lote." />
+                            <Button Content="Ciudad" Tag="{}{ciudad}" Style="{StaticResource TokenButton}" Click="OnToken"
+                                    ToolTip="Ciudad de cada foto desde GPS; si no, usa la ciudad del lote." />
                             <Button Tag="{}{codigo_pais}" Style="{StaticResource TokenButton}" Click="OnToken"
-                                    ToolTip="Código ISO de dos letras aplicado al lote. Ejemplo: ID."><TextBlock Text="{}{codigo_pais}" /></Button>
+                                    ToolTip="Código ISO de cada foto desde GPS; si no, usa el código del lote. Ejemplo: ID."><TextBlock Text="{}{codigo_pais}" /></Button>
                             <Button Content="{}{indicador}" Style="{StaticResource TokenButton}" Click="OnToken"
                                     ToolTip="Indicador personalizado del país o viaje. Ejemplo: IND." />
                         </WrapPanel>
@@ -186,10 +240,10 @@
                                          ToolTip="Tu abreviatura preferida, por ejemplo IND." />
                             </StackPanel>
                         </UniformGrid>
-                        <TextBlock Text="Para buscar país y ciudad desde GPS, usa Ubicación en el menú superior. Puedes editar cualquier dato antes de renombrar."
-                                   Foreground="{StaticResource Muted}" FontSize="11" Margin="0,-4,0,3" TextWrapping="Wrap" />
+                        <TextBlock Text="País, ciudad y código pueden resolverse foto a foto desde el GPS. Usa Ubicación &gt; Resolver cada foto sin Internet, o edita los valores del lote."
+                                   Foreground="{StaticResource Muted}" FontSize="13" Margin="0,-4,0,3" TextWrapping="Wrap" />
                         <TextBlock Text="Modo local: GeoNames © contributors · Modo en línea: OpenStreetMap © contributors."
-                                   Foreground="{StaticResource Muted}" FontSize="11" Margin="0,0,0,7" TextWrapping="Wrap" />
+                                   Foreground="{StaticResource Muted}" FontSize="13" Margin="0,0,0,7" TextWrapping="Wrap" />
                         <Expander Header="Todos los campos" Foreground="{StaticResource Muted}" Margin="0,0,0,6">
                             <StackPanel Margin="0,6,0,0">
                                 <WrapPanel>
@@ -252,14 +306,14 @@
 
                     <DataGrid Grid.Row="1" x:Name="FilesGrid" Visibility="Collapsed" AutomationProperties.Name="Vista previa de archivos"
                               SelectionChanged="OnGridSelectionChanged" HeadersVisibility="Column"
-                              SelectionMode="Extended" SelectionUnit="FullRow" RowHeight="37" AutoGenerateColumns="False"
+                              SelectionMode="Extended" SelectionUnit="FullRow" RowHeight="42" AutoGenerateColumns="False"
                               CanUserAddRows="False" CanUserDeleteRows="False" CanUserSortColumns="False"
                               CanUserReorderColumns="False" CanUserResizeRows="False" IsReadOnly="True"
                               BorderThickness="0" GridLinesVisibility="Horizontal"
-                              HorizontalGridLinesBrush="#E9EDF5" Background="White" AlternatingRowBackground="#FAFBFE"
+                              HorizontalGridLinesBrush="#35435E" Background="#152138" AlternatingRowBackground="#19263E"
                               EnableRowVirtualization="True" ColumnHeaderStyle="{StaticResource ColumnHeader}">
                         <DataGrid.RowStyle>
-                            <Style TargetType="DataGridRow">
+                            <Style TargetType="DataGridRow"><Setter Property="Background" Value="#152138" /><Setter Property="Foreground" Value="#E8EEFF" />
                                 <Setter Property="AutomationProperties.Name" Value="{Binding OriginalName}" />
                             </Style>
                         </DataGrid.RowStyle>
@@ -287,10 +341,10 @@
                                                 Binding="{Binding Row.NewName}">
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock" BasedOn="{StaticResource FileCell}">
-                                        <Setter Property="ToolTip" Value="{Binding Row.NewName}" />
+                                        <Setter Property="ToolTip" Value="{Binding Row.Destination}" />
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding Row.Status}" Value="{x:Static core:RenameStatus.Ready}">
-                                                <Setter Property="Foreground" Value="#2B3CB7" />
+                                                <Setter Property="Foreground" Value="#AFC6FF" />
                                                 <Setter Property="FontWeight" Value="SemiBold" />
                                             </DataTrigger>
                                         </Style.Triggers>
@@ -309,9 +363,9 @@
                     </DataGrid>
 
                     <Border Grid.Row="1" x:Name="EmptyState" Margin="13" BorderThickness="1"
-                            BorderBrush="#DCE4F5" CornerRadius="8" Background="#F8FAFF">
+                            BorderBrush="#35435E" CornerRadius="8" Background="#101C30">
                         <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Margin="20">
-                            <Border Background="#E9EDFF" Width="54" Height="54" CornerRadius="13" Margin="0,0,0,12">
+                            <Border Background="#283D69" Width="54" Height="54" CornerRadius="13" Margin="0,0,0,12">
                                 <Path Data="M1,6 H8 L10,9 H24 V22 H1 Z M12,12 V19 M8,15.5 H16"
                                       Stroke="{StaticResource Accent}" StrokeThickness="1.7"
                                       StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
@@ -327,13 +381,13 @@
 
                     <Border Grid.Row="2" x:Name="InspectorPanel" Visibility="Collapsed"
                             BorderBrush="{StaticResource Line}" BorderThickness="0,1,0,0"
-                            Background="#F8FAFF" Padding="14,10">
-                        <Expander x:Name="ExifExpander" IsExpanded="True" Expanded="OnExifToggle" Collapsed="OnExifToggle">
+                            Background="#101C30" Padding="14,10">
+                        <Expander x:Name="ExifExpander" IsExpanded="True" Foreground="{StaticResource Ink}" Expanded="OnExifToggle" Collapsed="OnExifToggle">
                             <Expander.Header>
                                 <TextBlock Text="Datos EXIF" FontWeight="SemiBold" FontSize="15" Margin="5,0" />
                             </Expander.Header>
                             <StackPanel Margin="0,8,0,0">
-                                <TextBlock x:Name="ExifFileName" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"
+                                <TextBlock x:Name="ExifFileName" Foreground="{StaticResource Ink}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"
                                            Margin="0,0,0,4" />
                                 <TextBlock x:Name="InspectorStatus" Foreground="{StaticResource Muted}"
                                            TextWrapping="Wrap" Margin="0,0,0,7" />
@@ -348,12 +402,12 @@
                                                 <Button Click="OnExifValue" Tag="{Binding Insertion}" ToolTip="{Binding Hint}"
                                                         AutomationProperties.Name="{Binding Hint}"
                                                         Padding="9,5" Margin="0,0,6,6" MaxWidth="180" MinWidth="96"
-                                                        BorderBrush="#D9E1FF" Background="#F3F5FF">
+                                                        BorderBrush="#40557D" Background="#1C2A43">
                                                     <StackPanel>
                                                         <TextBlock Text="{Binding Label}" FontSize="11"
                                                                    Foreground="{StaticResource Muted}" />
                                                         <TextBlock Text="{Binding Value}" TextTrimming="CharacterEllipsis"
-                                                                   Foreground="#2B3BA7" />
+                                                                   Foreground="#CCD9FF" />
                                                     </StackPanel>
                                                 </Button>
                                             </DataTemplate>
@@ -367,7 +421,7 @@
             </Border>
         </Grid>
 
-        <Border Grid.Row="3" Background="White" BorderBrush="{StaticResource Line}"
+        <Border Grid.Row="3" Background="#152138" BorderBrush="{StaticResource Line}"
                 BorderThickness="0,1,0,0" Padding="20,10">
             <DockPanel>
                 <StackPanel Orientation="Horizontal" DockPanel.Dock="Right">

@@ -3,16 +3,16 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     StartupUri="MainWindow.xaml">
     <Application.Resources>
-        <SolidColorBrush x:Key="Canvas" Color="#F1F4FA" />
-        <SolidColorBrush x:Key="Ink" Color="#182443" />
-        <SolidColorBrush x:Key="Muted" Color="#52627C" />
-        <SolidColorBrush x:Key="Line" Color="#DDE4F0" />
-        <SolidColorBrush x:Key="Accent" Color="#3E4DDD" />
-        <SolidColorBrush x:Key="SoftAccent" Color="#E9EDFF" />
+        <SolidColorBrush x:Key="Canvas" Color="#0C1324" />
+        <SolidColorBrush x:Key="Ink" Color="#F5F8FF" />
+        <SolidColorBrush x:Key="Muted" Color="#D0DCF2" />
+        <SolidColorBrush x:Key="Line" Color="#35435E" />
+        <SolidColorBrush x:Key="Accent" Color="#304DB8" />
+        <SolidColorBrush x:Key="SoftAccent" Color="#283D69" />
 
         <Style TargetType="Window">
             <Setter Property="FontFamily" Value="Inter, Segoe UI" />
-            <Setter Property="FontSize" Value="13" />
+            <Setter Property="FontSize" Value="15" />
             <Setter Property="Foreground" Value="{StaticResource Ink}" />
             <Setter Property="Background" Value="{StaticResource Canvas}" />
         </Style>
@@ -36,7 +36,8 @@
             <Setter Property="Padding" Value="8,3" />
             <Setter Property="VerticalContentAlignment" Value="Center" />
             <Setter Property="Foreground" Value="{StaticResource Ink}" />
-            <Setter Property="Background" Value="White" />
+            <Setter Property="CaretBrush" Value="{StaticResource Ink}" />
+            <Setter Property="Background" Value="#1C2A43" />
             <Setter Property="BorderBrush" Value="{StaticResource Line}" />
             <Setter Property="BorderThickness" Value="1" />
             <Style.Triggers>
@@ -51,14 +52,15 @@
             <Setter Property="Margin" Value="0,0,0,7" />
             <Setter Property="Padding" Value="4,0,0,0" />
         </Style>
-        <Style TargetType="ComboBox">
+        <Style TargetType="MenuItem"><Setter Property="Foreground" Value="#182443" /></Style>
+<Style TargetType="ComboBox"><Setter Property="Foreground" Value="#182443" />
             <Setter Property="MinHeight" Value="32" />
             <Setter Property="VerticalContentAlignment" Value="Center" />
             <Setter Property="Padding" Value="7,3" />
         </Style>
         <Style TargetType="Button">
             <Setter Property="Foreground" Value="{StaticResource Ink}" />
-            <Setter Property="Background" Value="White" />
+            <Setter Property="Background" Value="#1C2A43" />
             <Setter Property="BorderBrush" Value="{StaticResource Line}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="Padding" Value="13,7" />
@@ -100,10 +102,10 @@
         </Style>
         <Style x:Key="TokenButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
             <Setter Property="FontFamily" Value="Cascadia Mono, Consolas" />
-            <Setter Property="FontSize" Value="11" />
-            <Setter Property="Foreground" Value="#2B3BA7" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Foreground" Value="#D6E2FF" />
             <Setter Property="Background" Value="{StaticResource SoftAccent}" />
-            <Setter Property="BorderBrush" Value="#D9E1FF" />
+            <Setter Property="BorderBrush" Value="#40557D" />
             <Setter Property="Padding" Value="6,3" />
             <Setter Property="Margin" Value="0,0,5,5" />
         </Style>

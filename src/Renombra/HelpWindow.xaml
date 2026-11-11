@@ -1,0 +1,142 @@
+<Window x:Class="Renombra.HelpWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Ayuda de RaspOdex" Width="860" Height="650" MinWidth="700" MinHeight="520"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False" Background="#F7F8FC">
+    <Window.Resources>
+        <Style TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#27324B" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+        <Style x:Key="SectionTitle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="20" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="#172345" />
+            <Setter Property="Margin" Value="0,0,0,8" />
+        </Style>
+        <Style x:Key="SubTitle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="#36466C" />
+            <Setter Property="Margin" Value="0,14,0,5" />
+        </Style>
+        <Style x:Key="Code" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="Consolas" />
+            <Setter Property="Background" Value="#EEF1FA" />
+            <Setter Property="Padding" Value="10,7" />
+            <Setter Property="Margin" Value="0,4,0,7" />
+        </Style>
+    </Window.Resources>
+
+    <DockPanel>
+        <Border DockPanel.Dock="Top" Background="#172345" Padding="22,17">
+            <StackPanel>
+                <TextBlock Text="Cómo usar RaspOdex" Foreground="White" FontSize="24" FontWeight="SemiBold" />
+                <TextBlock Text="Una guía paso a paso, sin jerga técnica" Foreground="#C1CCED" FontSize="13" Margin="0,3,0,0" />
+            </StackPanel>
+        </Border>
+
+        <Border DockPanel.Dock="Bottom" BorderBrush="#DCE1EF" BorderThickness="0,1,0,0" Padding="16,10">
+            <Button Content="Cerrar" IsDefault="True" IsCancel="True" HorizontalAlignment="Right" Padding="18,7" Click="OnClose" />
+        </Border>
+
+        <TabControl Margin="16" Padding="8" FontSize="13">
+            <TabItem Header="Primeros pasos">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="10,8">
+                    <StackPanel>
+                        <TextBlock Text="La forma más segura de trabajar" Style="{StaticResource SectionTitle}" />
+                        <TextBlock Text="RaspOdex siempre muestra una vista previa. Hasta que pulses Renombrar, los nombres originales no cambian." />
+                        <TextBlock Text="1. Añade archivos o una carpeta. Puedes arrastrarlos a la ventana." Margin="0,14,0,0" />
+                        <TextBlock Text="2. Elige una plantilla del desplegable o pulsa los botones de campos para construirla." Margin="0,7,0,0" />
+                        <TextBlock Text="3. Si las fotos tienen GPS, usa Ubicación &gt; Resolver cada foto sin Internet (GeoNames)." Margin="0,7,0,0" />
+                        <TextBlock Text="4. Revisa la columna Nuevo nombre. Si una fila muestra un error, corrige el dato antes de continuar." Margin="0,7,0,0" />
+                        <TextBlock Text="5. Pulsa Renombrar sólo cuando la vista previa sea la que quieres." Margin="0,7,0,0" />
+
+                        <TextBlock Text="Ejemplo para tus fotos de Indonesia" Style="{StaticResource SubTitle}" />
+                        <TextBlock Text="Escribe Indonesia en País y usa esta plantilla:" />
+                        <TextBlock Text="{}{pais}_{ciudad}_{fecha:yyyyMMdd_HHmmss}_{nombre}" Style="{StaticResource Code}" />
+                        <TextBlock Text="La palabra Indonesia será común, pero ciudad, fecha y hora se calcularán de cada foto." />
+
+                        <TextBlock Text="Qué significan los campos del lote" Style="{StaticResource SubTitle}" />
+                        <TextBlock Text="País, código e indicador pueden ser valores fijos para todo el viaje. Ciudad se usa como reserva para una foto que no tenga GPS. Lugar es un texto fijo que tú decides, como Indonesia o Bali." />
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem Header="Plantillas y campos">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="10,8">
+                    <StackPanel>
+                        <TextBlock Text="Una plantilla es una receta para el nombre" Style="{StaticResource SectionTitle}" />
+                        <TextBlock Text="El texto normal se conserva tal cual. Lo que está entre llaves se sustituye por un dato." />
+                        <TextBlock Text="Ejemplo: Viaje_{fecha:yyyyMMdd}_{camara}_{nombre}" Style="{StaticResource Code}" />
+                        <TextBlock Text="Puede producir: Viaje_20250927_Xiaomi M2103K19PG_IMG_7740.jpg" />
+
+                        <TextBlock Text="Campos más útiles" Style="{StaticResource SubTitle}" />
+                        <TextBlock Text="{}{nombre}  Nombre original sin extensión." />
+                        <TextBlock Text="{}{fecha:yyyyMMdd_HHmmss}  Fecha y hora EXIF de cada foto." />
+                        <TextBlock Text="{}{hora}  Hora EXIF de cada foto; equivale a HHmmss." />
+                        <TextBlock Text="{}{pais}  País de la foto si tiene GPS; si no, el país del lote." />
+                        <TextBlock Text="{}{ciudad}  Localidad de la foto si tiene GPS; si no, la ciudad del lote." />
+                        <TextBlock Text="{}{codigo_pais}  Código ISO, por ejemplo ES o ID." />
+                        <TextBlock Text="{}{camara}, {iso}, {focal}, {apertura}  Datos técnicos EXIF." />
+                        <TextBlock Text="{}{latitud}, {longitud}  Coordenadas GPS en el propio nombre." />
+
+                        <TextBlock Text="Plantillas incluidas" Style="{StaticResource SubTitle}" />
+                        <TextBlock Text="Fecha y nombre · Viaje con país, ciudad, fecha y hora · Indicador, ciudad y fecha · Fecha, cámara y número · Cámara, ISO y captura · Coordenadas y fecha · Dimensiones y nombre." />
+                        <TextBlock Text="Puedes guardar tus propias plantillas con Guardar…; quedan junto a la aplicación en Renombra.Plantillas.json." Margin="0,7,0,0" />
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem Header="Expresiones regulares">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="10,8">
+                    <StackPanel>
+                        <TextBlock Text="Qué es una expresión regular" Style="{StaticResource SectionTitle}" />
+                        <TextBlock Text="Es una forma de describir un patrón de texto. En vez de buscar una palabra exacta, puedes decir qué forma debe tener el texto. Es opcional: para la mayoría de los renombrados normales no necesitas activarla." />
+
+                        <TextBlock Text="Ejemplos sencillos" Style="{StaticResource SubTitle}" />
+                        <TextBlock Text="IMG_  Busca exactamente ese texto, sin expresión regular." />
+                        <TextBlock Text="^IMG_  Sólo nombres que empiezan por IMG_." Style="{StaticResource Code}" />
+                        <TextBlock Text="\d+  Una o más cifras, como 1, 24 o 20250927." Style="{StaticResource Code}" />
+                        <TextBlock Text="\s+  Uno o más espacios." Style="{StaticResource Code}" />
+                        <TextBlock Text="(IMG|DSC)_  IMG_ o DSC_. Los paréntesis agrupan y la barra significa ‘o’." Style="{StaticResource Code}" />
+                        <TextBlock Text="\.JPG$  Sólo la extensión JPG al final del nombre. El punto lleva una barra porque el punto tiene un significado especial." Style="{StaticResource Code}" />
+
+                        <TextBlock Text="Cómo usarlo sin miedo" Style="{StaticResource SubTitle}" />
+                        <TextBlock Text="Activa Expresión regular, escribe el patrón en Buscar y el texto nuevo en Reemplazar por. Mira primero la vista previa. Si no reconoces símbolos como ^, $, ., *, +, ?, ( ), [ ] o \, desactiva la casilla y usa una búsqueda normal." />
+                        <TextBlock Text="Importante: una expresión regular mal escrita no renombra nada; RaspOdex la marca como error en la vista previa para que puedas corregirla." Margin="0,7,0,0" />
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem Header="GPS y mapa">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="10,8">
+                    <StackPanel>
+                        <TextBlock Text="Ubicación por foto" Style="{StaticResource SectionTitle}" />
+                        <TextBlock Text="GeoNames local lee el GPS de cada archivo y busca la localidad poblada más cercana. No sube fotos ni coordenadas a Internet. Las fotos sin GPS conservan los valores manuales del lote." />
+                        <TextBlock Text="La opción Buscar sin Internet con GeoNames consulta sólo la foto seleccionada. Resolver cada foto sin Internet procesa todas las fotos del lote." Margin="0,7,0,0" />
+
+                        <TextBlock Text="Sobre el mapa" Style="{StaticResource SubTitle}" />
+                        <TextBlock Text="Un mapa con las fotos es posible. La opción ligera consiste en mostrar un plano local con los puntos GPS y sus nombres, sin descargar mapas completos. Una versión cartográfica con calles, costas y zoom necesitaría un visor de mapas y teselas, y ocuparía más espacio además de depender de un proveedor de mapas." />
+                        <TextBlock Text="La prioridad actual es que los datos que alimentan el mapa sean correctos por foto. El siguiente paso razonable sería abrir un mapa de revisión con los puntos, agrupar fotos cercanas y permitir hacer clic en un punto para ver su nombre y fecha." Margin="0,7,0,0" />
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem Header="Problemas habituales">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="10,8">
+                    <StackPanel>
+                        <TextBlock Text="El campo Indonesia no existe" Style="{StaticResource SectionTitle}" />
+                        <TextBlock Text="Las llaves indican un campo. Indonesia no es un campo válido. Escribe Indonesia sin llaves como texto fijo, o ponlo en País y usa {pais}." />
+                        <TextBlock Text="No aparece la ciudad" Style="{StaticResource SubTitle}" />
+                        <TextBlock Text="Comprueba que la foto tenga latitud y longitud. Si no tiene GPS, escribe una ciudad fija en el lote o quita {ciudad} de la plantilla." />
+                        <TextBlock Text="La hora no coincide con el nombre antiguo" Style="{StaticResource SubTitle}" />
+                        <TextBlock Text="La plantilla usa la hora guardada en EXIF. Si la cámara guardó una zona horaria incorrecta, RaspOdex no la inventa; en ese caso necesitaríamos añadir un ajuste horario." />
+                        <TextBlock Text="El archivo renombra.dll" Style="{StaticResource SubTitle}" />
+                        <TextBlock Text="RaspOdex.dll es el núcleo compilado de la aplicación .NET. No es un documento para abrir: RaspOdex.exe lo carga al iniciar, igual que una aplicación normal carga sus bibliotecas internas." />
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+        </TabControl>
+    </DockPanel>
+</Window>

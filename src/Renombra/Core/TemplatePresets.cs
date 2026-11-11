@@ -18,7 +18,12 @@ public static class TemplatePresets
     public static IReadOnlyList<TemplatePreset> BuiltIn { get; } = Array.AsReadOnly(new[]
     {
         new TemplatePreset("Fecha de captura y nombre", "{fecha:yyyyMMdd}_{nombre}"),
+        new TemplatePreset("Fecha y hora de captura", "{fecha:yyyyMMdd_HHmmss}_{nombre}"),
+        new TemplatePreset("Viaje con país, ciudad, fecha y hora", "{pais}_{ciudad}_{fecha:yyyyMMdd_HHmmss}_{nombre}"),
+        new TemplatePreset("Viaje con indicador y ciudad", "{indicador}_{ciudad}_{fecha:yyyyMMdd_HHmmss}_{nombre}"),
         new TemplatePreset("Fecha, cámara y número", "{fecha:yyyyMMdd}_{camara}_{n}"),
+        new TemplatePreset("Cámara, ISO y captura", "{camara}_{iso}_{fecha:yyyyMMdd_HHmmss}_{nombre}"),
+        new TemplatePreset("Coordenadas y fecha", "{latitud}_{longitud}_{fecha:yyyyMMdd_HHmmss}_{nombre}"),
         new TemplatePreset("Dimensiones y nombre", "{ancho}x{alto}_{nombre}")
     });
 

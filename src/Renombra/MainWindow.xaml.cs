@@ -14,9 +14,9 @@ namespace Renombra;
 public partial class MainWindow : Window
 {
     private static readonly StringComparer PathComparer = StringComparer.OrdinalIgnoreCase;
-    private static readonly Brush ErrorColor = new SolidColorBrush(Color.FromRgb(156, 33, 51));
-    private static readonly Brush ReadyColor = new SolidColorBrush(Color.FromRgb(24, 111, 79));
-    private static readonly Brush NeutralColor = new SolidColorBrush(Color.FromRgb(82, 98, 124));
+    private static readonly Brush ErrorColor = new SolidColorBrush(Color.FromRgb(255, 151, 158));
+    private static readonly Brush ReadyColor = new SolidColorBrush(Color.FromRgb(126, 224, 184));
+    private static readonly Brush NeutralColor = new SolidColorBrush(Color.FromRgb(180, 195, 223));
 
     private readonly List<FileItem> _files = [];
     private readonly Stack<IReadOnlyList<RenameMove>> _history = new();
@@ -261,6 +261,48 @@ public partial class MainWindow : Window
     }
     private void OnRuleClick(object sender, RoutedEventArgs e) => RequestPreview();
 
+    private void OnRegexInsert(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem { Tag: string token }) return;
+        RegexCheck.IsChecked = true;
+        SearchBox.SelectedText = token;
+        SearchBox.Focus();
+        RequestPreview();
+    }
+
+    private void OnFieldMenu(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem { Tag: string token }) InsertToken(token, separate: true);
+    }
+
+    private void OnAutomatic(object sender, RoutedEventArgs e)
+    {
+        _ready = false;
+        SearchBox.Clear(); ReplacementBox.Clear();
+        RegexCheck.IsChecked = false; ExtensionCheck.IsChecked = false;
+        NumberCheck.IsChecked = false; CaseBox.SelectedIndex = 0;
+        TemplateBox.Text = "{fecha_segura}_{nombre}";
+        UniqueCheck.IsChecked = true;
+        _ready = true;
+        RequestPreview();
+    }
+
+    private void OnChooseOutput(object sender, RoutedEventArgs e)
+    {
+        var dialog = new OpenFolderDialog { Title = "Elegir carpeta de salida" };
+        if (dialog.ShowDialog(this) == true)
+        {
+            OutputFolderBox.Text = dialog.FolderName;
+            RequestPreview();
+        }
+    }
+
+    private void OnClearOutput(object sender, RoutedEventArgs e)
+    {
+        OutputFolderBox.Clear();
+        RequestPreview();
+    }
+
     private void OnToken(object sender, RoutedEventArgs e)
     {
         if (sender is not Button button)
@@ -270,7 +312,7 @@ public partial class MainWindow : Window
         if (string.IsNullOrWhiteSpace(token))
             return;
 
-        InsertToken(token);
+        InsertToken(token, separate: true);
     }
 
     private void OnUseDateName(object sender, RoutedEventArgs e)
@@ -284,13 +326,16 @@ public partial class MainWindow : Window
     private void OnUseTravelTemplate(object sender, RoutedEventArgs e)
     {
         _ready = false;
-        TemplateBox.Text = "{pais}_{ciudad}_{fecha:yyyyMMdd}_{nombre}";
+        TemplateBox.Text = "{pais}_{ciudad}_{fecha:yyyyMMdd_HHmmss}_{nombre}";
         _ready = true;
         RequestPreview();
     }
 
     private async void OnLookupLocationOffline(object sender, RoutedEventArgs e) =>
         await LookupLocationAsync(online: false);
+
+    private async void OnLookupAllLocationsOffline(object sender, RoutedEventArgs e) =>
+        await LookupAllLocationsOfflineAsync();
 
     private async void OnLookupLocation(object sender, RoutedEventArgs e) =>
         await LookupLocationAsync(online: true);
@@ -352,6 +397,7 @@ public partial class MainWindow : Window
             var location = online
                 ? await LocationLookup.ReverseAsync(latitude, longitude)
                 : await GeoNamesOfflineLookup.ReverseAsync(latitude, longitude);
+            _files[index] = file with { ResolvedLocation = location };
             _ready = false;
             CountryBox.Text = location.Country;
             CountryCodeBox.Text = location.CountryCode;
@@ -372,6 +418,38 @@ public partial class MainWindow : Window
         }
     }
 
+    private async Task LookupAllLocationsOfflineAsync()
+    {
+        if (_busy || _files.Count == 0)
+        {
+            SetStatus("Añade primero las fotos que quieras analizar.", true);
+            return;
+        }
+
+        using var cancellation = new CancellationTokenSource();
+        SetBusy(true);
+        try
+        {
+            SetStatus("Leyendo el GPS de todas las fotos…");
+            await LoadBatchMetadataAsync(cancellation.Token);
+            await ResolvePerFileLocationsAsync(cancellation.Token);
+            SetStatus("Ubicación individual preparada para cada foto con GPS.");
+        }
+        catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+        {
+        }
+        catch (Exception ex)
+        {
+            ShowError("No se pudieron resolver las ubicaciones", ex.Message);
+        }
+        finally
+        {
+            SetBusy(false);
+        }
+
+        RequestPreview();
+    }
+
     private void OnClearLocation(object sender, RoutedEventArgs e)
     {
         _ready = false;
@@ -386,15 +464,7 @@ public partial class MainWindow : Window
 
     private void OnShowHelp(object sender, RoutedEventArgs e)
     {
-        MessageBox.Show(this,
-            "Campos habituales\n\n" +
-            "{fecha:yyyyMMdd} usa la fecha de captura.\n" +
-            "{camara}, {objetivo}, {iso}, {focal} y {apertura} usan EXIF.\n" +
-            "{lugar} usa el texto que escribas para todo el lote.\n" +
-            "{pais}, {ciudad} y {codigo_pais} usan los campos de ubicación del lote. {codigo_pais} es ISO de dos letras, como ES o ID.\n" +
-            "{indicador} usa tu abreviatura propia, por ejemplo IND.\n\n" +
-            "En Ubicación puedes buscar sin Internet con el índice local de GeoNames. También existe una consulta opcional en línea que envía solo las coordenadas a OpenStreetMap después de pedir permiso.",
-            "Ayuda de Renombra", MessageBoxButton.OK, MessageBoxImage.Information);
+        new HelpWindow { Owner = this }.ShowDialog();
     }
 
     private void OnExifValue(object sender, RoutedEventArgs e)
@@ -550,6 +620,7 @@ public partial class MainWindow : Window
         ExtensionCheck.IsChecked = false;
         CaseBox.SelectedIndex = 0;
         NumberCheck.IsChecked = false;
+        UniqueCheck.IsChecked = false;
         StartBox.Text = "1";
         DigitsBox.Text = "3";
         _ready = true;
@@ -588,7 +659,9 @@ public partial class MainWindow : Window
             Country: CountryBox.Text,
             CountryCode: CountryCodeBox.Text,
             Indicator: IndicatorBox.Text,
-            City: CityBox.Text);
+            City: CityBox.Text,
+            OutputFolder: OutputFolderBox.Text,
+            AutoUnique: UniqueCheck.IsChecked == true);
         return true;
     }
 
@@ -627,13 +700,17 @@ public partial class MainWindow : Window
         var notice = _previewNotice;
         try
         {
-            if (ExifFields.IsUsedIn(options.Template) && _files.Any(file => file.Metadata is null))
+            if ((ExifFields.IsUsedIn(options.Template) || RenameEngine.TemplateUsesGpsLocation(options.Template)) &&
+                _files.Any(file => file.Metadata is null))
             {
                 if (ExifMetadataReader.IsAvailable)
                     await LoadBatchMetadataAsync(cancellation.Token);
                 else
                     notice = "No se encontró ExifTool para leer metadatos.";
             }
+
+            if (RenameEngine.TemplateUsesGpsLocation(options.Template))
+                await ResolvePerFileLocationsAsync(cancellation.Token);
 
             cancellation.Token.ThrowIfCancellationRequested();
             var snapshot = _files.ToArray();
@@ -670,6 +747,47 @@ public partial class MainWindow : Window
             if (ReferenceEquals(_previewCancellation, cancellation))
                 _previewCancellation = null;
             UpdateButtons();
+        }
+    }
+
+    private async Task ResolvePerFileLocationsAsync(CancellationToken cancellationToken)
+    {
+        var pending = Enumerable.Range(0, _files.Count)
+            .Where(index =>
+            {
+                var file = _files[index];
+                return file.ResolvedLocation is null &&
+                    file.Metadata?.Latitude is double && file.Metadata.Longitude is double;
+            })
+            .ToArray();
+        if (pending.Length == 0)
+            return;
+
+        var cache = new Dictionary<(double Latitude, double Longitude), LocationLookupResult?>();
+        var completed = 0;
+        foreach (var index in pending)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var file = _files[index];
+            var latitude = file.Metadata!.Latitude!.Value;
+            var longitude = file.Metadata.Longitude!.Value;
+            var key = (latitude, longitude);
+            if (!cache.TryGetValue(key, out var location))
+            {
+                try
+                {
+                    location = await GeoNamesOfflineLookup.ReverseAsync(latitude, longitude, cancellationToken);
+                }
+                catch (IOException)
+                {
+                    location = null;
+                }
+                cache[key] = location;
+            }
+
+            _files[index] = file with { ResolvedLocation = location };
+            completed++;
+            SetStatus($"Resolviendo ubicación por foto · {completed} de {pending.Length}…");
         }
     }
 
