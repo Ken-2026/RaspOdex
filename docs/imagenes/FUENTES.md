@@ -1,6 +1,7 @@
 # Imágenes de presentación
 
 - `raspodex-portada.png`: ilustración generada con la herramienta de generación de imágenes, basada en el diseño de carpeta azul y frambuesa de RaspOdex. Es una imagen decorativa, no una captura de pantalla.
+- `raspodex-social.jpg`: copia de la misma portada en JPEG, preparada para la vista previa social de GitHub.
 - `raspodex-vista-previa.jpg`: captura de la aplicación RaspOdex 1.4.0. Los nombres de archivo, imágenes de entrada y datos EXIF son de pruebas sintéticas; no son fotografías personales.
 
 La portada se creó con la herramienta integrada de generación de imágenes. El prompt de composición fue:
