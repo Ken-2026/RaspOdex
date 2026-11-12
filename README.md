@@ -1,10 +1,26 @@
 # RaspOdex
 
+![Ilustración de RaspOdex: una carpeta azul con su símbolo y fotografías](docs/imagenes/raspodex-portada.png)
+
 **Tus fotos tienen una historia. Dales un nombre que te ayude a encontrarlas.**
+
+[English](README.en.md) · [Descargar para Windows](https://github.com/Ken-2026/RaspOdex/releases/tag/v1.4.0) · [Guía de uso](GUIA.md)
 
 ¿Has buscado una foto en tu galería y solo has encontrado nombres como `IMG_4812`? RaspOdex te ayuda a identificar muchas fotografías a la vez, incorporando información como el lugar y la fecha a sus nombres. Así podrás buscarlas por esas palabras en el Explorador o en una galería que permita buscar por nombre de archivo.
 
 RaspOdex **cambia nombres de archivos**: no escribe etiquetas, palabras clave ni metadatos dentro de las fotografías. La capacidad de búsqueda depende de cada galería.
+
+## Así se ve
+
+![Vista real de RaspOdex con tres archivos de ejemplo y sus nuevos nombres preparados](docs/imagenes/raspodex-vista-previa.jpg)
+
+*Captura de la versión 1.4.0 con archivos y datos EXIF de prueba. Los cambios se muestran antes de aplicarse.*
+
+Por ejemplo, con el lugar elegido `Viaje` y la fecha de captura, la plantilla puede proponer:
+
+```text
+IMG_1001.jpg  →  Viaje_20240203_IMG_1001.jpg
+```
 
 ## Descargar y empezar
 
