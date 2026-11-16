@@ -18,8 +18,14 @@ public partial class MainWindow : Window
     private static readonly Brush ReadyColor = new SolidColorBrush(Color.FromRgb(126, 224, 184));
     private static readonly Brush NeutralColor = new SolidColorBrush(Color.FromRgb(180, 195, 223));
 
-    private readonly List<FileItem> _files = [];
-    private readonly Stack<IReadOnlyList<RenameMove>> _history = new();
+    private List<FileItem> _files = [];
+    private readonly List<FileItem> _photoFiles = [];
+    private readonly List<FileItem> _documentFiles = [];
+    private readonly Stack<IReadOnlyList<RenameMove>> _photoHistory = new();
+    private readonly Stack<IReadOnlyList<RenameMove>> _documentHistory = new();
+    private ModeState? _photoState, _documentState;
+    private bool _documentMode;
+    private Stack<IReadOnlyList<RenameMove>> _history = new();
     private const int MetadataBatchSize = 128;
     private static readonly FileMetadata EmptyMetadata = new();
     private static readonly TemplatePreset ChoosePreset = new("Elegir una plantilla", "");
@@ -51,7 +57,10 @@ public partial class MainWindow : Window
         if (_ready)
             return;
 
+        _files = _photoFiles;
+        _history = _photoHistory;
         _ready = true;
+        UpdateModeAppearance();
         ExifStatus.Text = ExifMetadataReader.IsAvailable ? "ExifTool disponible" : "ExifTool no encontrado";
         ExifTokenList.ItemsSource = ExifFields.All
             .Select(field => new ExifDisplay(field.Token, field.Label, "")).ToArray();
@@ -63,12 +72,72 @@ public partial class MainWindow : Window
             await AddPathsAsync(arguments);
     }
 
+    private sealed record ModeState(string Search, string Replacement, string Template, string Output,
+        string Location, string Country, string City, string CountryCode, string Indicator,
+        string Start, string Digits, bool Regex, bool MatchCase, bool All, bool Extension,
+        bool Number, bool Unique, int CaseIndex);
+
+    private ModeState CaptureMode() => new(SearchBox.Text, ReplacementBox.Text, TemplateBox.Text, OutputFolderBox.Text,
+        LocationBox.Text, CountryBox.Text, CityBox.Text, CountryCodeBox.Text, IndicatorBox.Text,
+        StartBox.Text, DigitsBox.Text, RegexCheck.IsChecked == true, MatchCaseCheck.IsChecked == true,
+        AllMatchesCheck.IsChecked == true, ExtensionCheck.IsChecked == true, NumberCheck.IsChecked == true,
+        UniqueCheck.IsChecked == true, CaseBox.SelectedIndex);
+
+    private void RestoreMode(ModeState? s)
+    {
+        ResetRules();
+        _ready = false;
+        OutputFolderBox.Text = s?.Output ?? "";
+        if (s is not null)
+        {
+            SearchBox.Text = s.Search; ReplacementBox.Text = s.Replacement; TemplateBox.Text = s.Template;
+            LocationBox.Text = s.Location; CountryBox.Text = s.Country; CityBox.Text = s.City;
+            CountryCodeBox.Text = s.CountryCode; IndicatorBox.Text = s.Indicator;
+            StartBox.Text = s.Start; DigitsBox.Text = s.Digits;
+            RegexCheck.IsChecked = s.Regex; MatchCaseCheck.IsChecked = s.MatchCase;
+            AllMatchesCheck.IsChecked = s.All; ExtensionCheck.IsChecked = s.Extension;
+            NumberCheck.IsChecked = s.Number; UniqueCheck.IsChecked = s.Unique;
+            CaseBox.SelectedIndex = s.CaseIndex;
+        }
+        _ready = true;
+    }
+
+    private void OnPhotoMode(object sender, RoutedEventArgs e) => SwitchMode(false);
+    private void OnDocumentMode(object sender, RoutedEventArgs e) => SwitchMode(true);
+
+    private void SwitchMode(bool documents)
+    {
+        if (!_ready || _busy || _documentMode == documents) return;
+        CancelPreview(); CancelInspector();
+        if (_documentMode) _documentState = CaptureMode(); else _photoState = CaptureMode();
+        _documentMode = documents;
+        _files = documents ? _documentFiles : _photoFiles;
+        _history = documents ? _documentHistory : _photoHistory;
+        RestoreMode(documents ? _documentState : _photoState);
+        UpdateModeAppearance();
+        ShowCurrentNames();
+        RequestPreview(documents ? "Modo documentos: añade PDF o DOCX y pulsa Analizar documentos." : "Modo fotos y multimedia: prepara tu tanda de archivos.");
+    }
+
+    private void UpdateModeAppearance()
+    {
+        var media = _documentMode ? Visibility.Collapsed : Visibility.Visible;
+        var docs = _documentMode ? Visibility.Visible : Visibility.Collapsed;
+        DocumentControls.Visibility = docs; DocumentTokenMenu.Visibility = docs;
+        PhotoControls.Visibility = media; PhotoFieldsMenu.Visibility = media; VisionControls.Visibility = media; VisionTokenMenu.Visibility = media;
+        PhotoQuickFields.Visibility = media; PhotoAutomaticButton.Visibility = media; LocationMenu.Visibility = media;
+        PhotoModeButton.Style = _documentMode ? (Style)FindResource(typeof(Button)) : (Style)FindResource("PrimaryButton");
+        DocumentModeButton.Style = _documentMode ? (Style)FindResource("PrimaryButton") : (Style)FindResource(typeof(Button));
+        InspectorPanel.Visibility = !_documentMode && FilesGrid.Visibility == Visibility.Visible ? Visibility.Visible : Visibility.Collapsed;
+        Title = _documentMode ? "RaspOdex · Documentos" : "RaspOdex · Fotos y multimedia";
+    }
+
     private async void OnAddFiles(object sender, RoutedEventArgs e)
     {
         var dialog = new OpenFileDialog
         {
             Title = "Añadir archivos a Renombra",
-            Filter = "Todos los archivos|*.*",
+            Filter = _documentMode ? "Documentos PDF y Word (*.pdf;*.docx)|*.pdf;*.docx|Todos los archivos|*.*" : "Todos los archivos|*.*",
             Multiselect = true,
             CheckFileExists = true
         };
@@ -102,6 +171,7 @@ public partial class MainWindow : Window
             var known = new HashSet<string>(_files.Select(file => file.FullPath), PathComparer);
             foreach (var file in result.Files)
             {
+                if (_documentMode && !DocumentAnalyzer.Supports(file.FullPath)) { skipped++; continue; }
                 if (known.Add(file.FullPath))
                 {
                     _files.Add(file);
@@ -126,7 +196,7 @@ public partial class MainWindow : Window
                 : "No se encontraron archivos nuevos.", skipped > 0);
         }
 
-        RequestPreview(added == 0 ? StatusText.Text : skipped > 0 ? "Algunas rutas no se pudieron abrir." : null);
+        RequestPreview(added == 0 ? StatusText.Text : skipped > 0 ? (_documentMode ? "Se omitieron archivos que no son PDF o DOCX, o rutas inaccesibles." : "Algunas rutas no se pudieron abrir.") : null);
     }
 
     private static (List<FileItem> Files, int Skipped) ScanPaths(IReadOnlyList<string> paths, bool recursive)
@@ -260,6 +330,198 @@ public partial class MainWindow : Window
         RequestPreview();
     }
     private void OnRuleClick(object sender, RoutedEventArgs e) => RequestPreview();
+
+    private async void OnPrepareVision(object sender, RoutedEventArgs e)
+    {
+        if (_busy) return;
+        if (MessageBox.Show(this, "Se comprobará Ollama y se descargará el modelo visual local (aprox. 1,3 GB), si hace falta. Requiere Internet. ¿Continuar?", "Preparar IA visual", MessageBoxButton.YesNo, MessageBoxImage.Information) != MessageBoxResult.Yes) return;
+        SetBusy(true);
+        try
+        {
+            await LocalAiSetup.PrepareAsync(PhotoVision.Model, message => Dispatcher.Invoke(() => SetStatus(message)));
+            SetStatus("IA visual preparada. Añade fotos y pulsa Analizar imágenes.");
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception)
+        { ShowError("No se pudo preparar la IA visual", ex.Message); }
+        finally { SetBusy(false); }
+    }
+
+    private string? RequestGeminiKey(string disclosure)
+    {
+        var dialog = new Window { Owner = this, Title = "Analizar con Gemini", Width = 540, SizeToContent = SizeToContent.Height,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner, Background = Background, Foreground = Foreground, ResizeMode = ResizeMode.NoResize };
+        var panel = new StackPanel { Margin = new Thickness(20) };
+        panel.Children.Add(new TextBlock { Text = disclosure + "\n\nSe necesita Internet y una clave propia de Gemini API. Se aplican las condiciones, cuotas y posibles costes de tu cuenta. La clave se usará solo para este análisis y no se guardará. Revisa la información antes de enviarla.", TextWrapping = TextWrapping.Wrap });
+        panel.Children.Add(new TextBlock { Text = "Clave de Gemini API:", Margin = new Thickness(0, 14, 0, 4) });
+        var input = new PasswordBox { Margin = new Thickness(0, 0, 0, 10) };
+        panel.Children.Add(input);
+        var accept = new Button { Content = "Enviar y analizar", HorizontalAlignment = HorizontalAlignment.Right, IsDefault = true };
+        accept.Click += (_, _) => { if (!string.IsNullOrWhiteSpace(input.Password)) dialog.DialogResult = true; };
+        panel.Children.Add(accept); dialog.Content = panel;
+        return dialog.ShowDialog() == true ? input.Password.Trim() : null;
+    }
+
+    private async void OnAnalyzePhotos(object sender, RoutedEventArgs e)
+    {
+        if (_busy || _documentMode) return;
+        var indices = Enumerable.Range(0, _files.Count).Where(i => PhotoVision.Supports(_files[i].FullPath)).ToArray();
+        if (indices.Length == 0) { SetStatus("Añade imágenes JPG, PNG, BMP o TIFF antes de analizarlas.", true); return; }
+        string? geminiKey = null;
+        if (PhotoGemini.IsChecked == true)
+        {
+            geminiKey = RequestGeminiKey($"Se enviarán a Google miniaturas de {indices.Length} imágenes.");
+            if (geminiKey is null) return;
+        }
+        var readText = PhotoReadText.IsChecked == true;
+        CancelPreview(); SetBusy(true);
+        var failures = 0;
+        try
+        {
+            for (var n = 0; n < indices.Length; n++)
+            {
+                SetStatus($"Analizando imágenes {(geminiKey is null ? "localmente" : "con Gemini")} · {n + 1} de {indices.Length}…");
+                var index = indices[n]; var path = _files[index].FullPath;
+                var result = await Task.Run(() => PhotoVision.AnalyzeAsync(path, readText, geminiKey));
+                if (result.Error.Length > 0) failures++;
+                _files[index] = _files[index] with { Vision = result };
+            }
+            _ready = false;
+            SearchBox.Clear(); ReplacementBox.Clear(); RegexCheck.IsChecked = false;
+            ExtensionCheck.IsChecked = false; NumberCheck.IsChecked = false; CaseBox.SelectedIndex = 0;
+            TemplateBox.Text = "{imagen}_{nombre}"; UniqueCheck.IsChecked = true; _ready = true;
+            ShowCurrentNames();
+        }
+        catch (Exception ex) { ShowError("No se completó el análisis visual", ex.Message); }
+        finally { _ready = true; SetBusy(false); }
+        var ignored = _files.Count - indices.Length;
+        RequestPreview(failures > 0 ? $"No se pudieron analizar {failures} imágenes; revisa sus errores." :
+            ignored > 0 ? $"Analizadas {indices.Length} imágenes; {ignored} archivos tienen otro formato." :
+            $"Analizadas {indices.Length} imágenes. Revisa cada propuesta; la IA puede equivocarse.");
+    }
+
+    private void OnEditPhotoDescription(object sender, RoutedEventArgs e)
+    {
+        if (FilesGrid.SelectedItem is not DisplayRow selected) { SetStatus("Selecciona una imagen analizada.", true); return; }
+        var index = _files.FindIndex(file => PathComparer.Equals(file.FullPath, selected.Row.File.FullPath));
+        if (index < 0 || _files[index].Vision is not { Error.Length: 0 } result)
+        { SetStatus("Analiza primero la imagen seleccionada.", true); return; }
+        var dialog = new Window { Owner = this, Title = "Editar descripción", Width = 480, SizeToContent = SizeToContent.Height,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner, Background = Background, Foreground = Foreground, ResizeMode = ResizeMode.NoResize };
+        var panel = new StackPanel { Margin = new Thickness(18) };
+        panel.Children.Add(new TextBlock { Text = "Escribe las palabras que describen la foto:", TextWrapping = TextWrapping.Wrap });
+        var input = new TextBox { Text = result.Description, MaxLength = 65, Margin = new Thickness(0, 8, 0, 8) };
+        panel.Children.Add(input);
+        var accept = new Button { Content = "Aplicar", HorizontalAlignment = HorizontalAlignment.Right, IsDefault = true };
+        accept.Click += (_, _) => dialog.DialogResult = true; panel.Children.Add(accept); dialog.Content = panel;
+        if (dialog.ShowDialog() != true || string.IsNullOrWhiteSpace(input.Text)) return;
+        _files[index] = _files[index] with { Vision = result with { Description = input.Text.Trim().Replace(' ', '_') } };
+        RequestPreview("Descripción actualizada. Revisa la vista previa.");
+    }
+
+    private DocumentPreferences DocumentOptions() => new(DocOrg.IsChecked == true, DocType.IsChecked == true, DocSubject.IsChecked == true,
+        DocPerson.IsChecked == true, DocReference.IsChecked == true, DocId.IsChecked == true, DocDate.IsChecked == true, DocAi.IsChecked == true,
+        DocModel.SelectedIndex == 1 ? "qwen3:0.6b" : "qwen3:1.7b");
+
+    private async void OnPrepareLocalAi(object sender, RoutedEventArgs e)
+    {
+        if (_busy) return;
+        var model = DocumentOptions().Model;
+        var size = model == "qwen3:0.6b" ? "unos 523 MB" : "unos 1,4 GB";
+        if (MessageBox.Show(this, $"Se comprobará Ollama y, si falta, se instalará desde su distribuidor mediante winget. Se descargará el modelo {model} ({size}). Se necesita conexión a Internet.\n\n¿Continuar?",
+            "Preparar IA local", MessageBoxButton.YesNo, MessageBoxImage.Information) != MessageBoxResult.Yes) return;
+        SetBusy(true);
+        try
+        {
+            await LocalAiSetup.PrepareAsync(model, message => Dispatcher.Invoke(() => SetStatus(message)));
+            DocAi.IsChecked = true;
+            SetStatus("IA local preparada. Ya puedes analizar documentos.");
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception)
+        { ShowError("No se pudo preparar la IA", ex.Message); }
+        finally { SetBusy(false); }
+    }
+
+    private void OnChooseDocumentFields(object sender, RoutedEventArgs e)
+    {
+        if (FilesGrid.SelectedItem is not DisplayRow selected) { SetStatus("Selecciona un documento analizado.", true); return; }
+        var index = _files.FindIndex(file => PathComparer.Equals(file.FullPath, selected.Row.File.FullPath));
+        if (index < 0 || _files[index].Document is not { Error.Length: 0 } analysis || analysis.Fields.Count == 0)
+        { SetStatus("Analiza primero el documento seleccionado para ver sus datos.", true); return; }
+        var options = DocumentOptions();
+        var dialog = new Window { Owner = this, Title = "Elegir datos para este documento", Width = 560, Height = 460,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner, Background = Background, Foreground = Foreground,
+            ResizeMode = ResizeMode.CanResize };
+        var panel = new StackPanel { Margin = new Thickness(18) };
+        panel.Children.Add(new TextBlock { Text = "Elige qué datos incluir, en este orden. Comprueba que sean correctos.", TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 12) });
+        var boxes = new Dictionary<string, CheckBox>();
+        foreach (var (key, label, initially) in new[] { ("organismo", "Organismo o empresa", options.Organization),
+            ("tipo", "Tipo de documento", options.Type), ("asunto", "Asunto", options.Subject), ("persona", "Persona", options.Person),
+            ("referencia", "Expediente o factura", options.Reference),
+            ("identificador", "Identificador", options.Identifier), ("fecha", "Fecha", options.Date) })
+        {
+            if (!analysis.Fields.TryGetValue(key, out var value)) continue;
+            var check = new CheckBox { Content = label + ": " + value, IsChecked = initially, Margin = new Thickness(0, 4, 0, 4) };
+            boxes[key] = check; panel.Children.Add(check);
+        }
+        var accept = new Button { Content = "Aplicar a esta propuesta", Margin = new Thickness(0, 18, 0, 0), HorizontalAlignment = HorizontalAlignment.Left };
+        accept.Click += (_, _) => dialog.DialogResult = true;
+        panel.Children.Add(accept);
+        dialog.Content = new ScrollViewer { Content = panel, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
+        if (dialog.ShowDialog() != true) return;
+        bool Chosen(string key) => boxes.TryGetValue(key, out var box) && box.IsChecked == true;
+        var chosen = new DocumentPreferences(Chosen("organismo"), Chosen("tipo"), Chosen("asunto"), Chosen("persona"), Chosen("referencia"), Chosen("identificador"), Chosen("fecha"), false);
+        _files[index] = _files[index] with { Document = analysis with { SuggestedName = DocumentAnalyzer.BuildName(analysis.Fields, chosen) } };
+        RequestPreview("Propuesta actualizada. Revisa el nuevo nombre antes de renombrar.");
+    }
+
+    private async void OnAnalyzeDocuments(object sender, RoutedEventArgs e)
+    {
+        if (_busy) return;
+        var indices = Enumerable.Range(0, _files.Count).Where(i => DocumentAnalyzer.Supports(_files[i].FullPath)).ToArray();
+        if (indices.Length == 0)
+        {
+            SetStatus("Añade documentos PDF o DOCX antes de analizarlos.", true);
+            return;
+        }
+        string? geminiKey = null;
+        if (DocGemini.IsChecked == true)
+        {
+            geminiKey = RequestGeminiKey($"Se enviará a Google texto extraído de {indices.Length} documentos (hasta 12.000 caracteres por documento).");
+            if (geminiKey is null) return;
+        }
+        CancelPreview();
+        SetBusy(true);
+        var failures = 0;
+        var fallback = 0;
+        var preferences = DocumentOptions() with { GeminiKey = geminiKey };
+        try
+        {
+            for (var n = 0; n < indices.Length; n++)
+            {
+                SetStatus($"Analizando documentos {(geminiKey is null ? "localmente" : "con Gemini")} · {n + 1} de {indices.Length}…");
+                var index = indices[n];
+                var path = _files[index].FullPath;
+                var result = await Task.Run(() => DocumentAnalyzer.AnalyzeAsync(path, preferences));
+                if (result.Error.Length > 0) failures++;
+                if (result.Method.Contains("IA local no disponible", StringComparison.Ordinal)) fallback++;
+                _files[index] = _files[index] with { Document = result };
+            }
+            _ready = false;
+            SearchBox.Clear(); ReplacementBox.Clear(); RegexCheck.IsChecked = false;
+            ExtensionCheck.IsChecked = false; NumberCheck.IsChecked = false; CaseBox.SelectedIndex = 0;
+            TemplateBox.Text = "{contenido}";
+            UniqueCheck.IsChecked = true;
+            _ready = true;
+            ShowCurrentNames();
+        }
+        catch (Exception ex) { ShowError("No se completó el análisis", ex.Message); }
+        finally { _ready = true; SetBusy(false); }
+        var ignored = _files.Count - indices.Length;
+        RequestPreview(failures > 0 ? $"No se pudieron analizar {failures} documentos; consulta el resultado de cada fila." :
+            fallback > 0 ? $"IA local no disponible en {fallback} documentos: se usaron reglas locales. Revisa las propuestas." :
+            ignored > 0 ? $"Analizados {indices.Length} documentos; {ignored} archivos no son PDF o DOCX." :
+            $"Analizados {indices.Length} documentos. Revisa las propuestas antes de renombrar.");
+    }
 
     private void OnRegexInsert(object sender, RoutedEventArgs e)
     {
@@ -1040,7 +1302,7 @@ public partial class MainWindow : Window
         CountText.Text = string.Join(" · ", counts);
         EmptyState.Visibility = rows.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         FilesGrid.Visibility = rows.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
-        InspectorPanel.Visibility = FilesGrid.Visibility;
+        InspectorPanel.Visibility = _documentMode ? Visibility.Collapsed : FilesGrid.Visibility;
         UpdateButtons();
         RefreshInspector();
     }
@@ -1060,6 +1322,7 @@ public partial class MainWindow : Window
         if (!_ready)
             return;
 
+        ModeSelector.IsEnabled = !_busy;
         FilesToolbar.IsEnabled = !_busy;
         RulesPanel.IsEnabled = !_busy;
         NumberPanel.IsEnabled = UsesNumbering;

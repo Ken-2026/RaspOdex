@@ -1,5 +1,7 @@
 # RaspOdex
 
+> **Rama de desarrollo:** los modos de análisis visual y de documentos de esta rama son experimentales. La versión descargable y probada para fotos sigue siendo [1.4.0](https://github.com/Ken-2026/RaspOdex/releases/tag/v1.4.0). Consulta [el estado de las pruebas](docs/ESTADO-IA-EXPERIMENTAL.md) antes de ejecutar este código.
+
 ![Ilustración de RaspOdex: una carpeta azul con su símbolo y fotografías](docs/imagenes/raspodex-portada.png)
 
 **Tus fotos tienen una historia. Dales un nombre que te ayude a encontrarlas.**
@@ -24,7 +26,7 @@ IMG_1001.jpg  →  Viaje_20240203_IMG_1001.jpg
 
 ## Descargar y empezar
 
-1. Descarga el paquete completo para **Windows x64** desde [las versiones de RaspOdex](https://github.com/Ken-2026/Renombra/releases).
+1. Descarga el paquete completo para **Windows x64** desde [las versiones de RaspOdex](https://github.com/Ken-2026/RaspOdex/releases).
 2. Extrae **todo el ZIP** a una carpeta donde tengas permisos de escritura. Mantén juntas sus carpetas `tools` y `data`.
 3. Abre `RaspOdex.exe`. El paquete completo incluye el entorno de .NET, ExifTool y el índice local de GeoNames; no necesitas instalarlos por separado.
 4. Añade unas copias de fotos para probar. Elige **Automático · fecha y nombre** o construye una plantilla y revisa la columna **Nuevo nombre**. Los archivos solo cambian cuando pulsas **Renombrar**.
