@@ -12,7 +12,9 @@ public sealed record FileItem(
     DateTime Modified,
     DateTime Created,
     FileMetadata? Metadata = null,
-    LocationLookupResult? ResolvedLocation = null);
+    LocationLookupResult? ResolvedLocation = null,
+    DocumentAnalysis? Document = null,
+    PhotoVisionResult? Vision = null);
 
 public sealed record FileMetadata(DateTime? DateTaken = null, string Camera = "", int? Width = null, int? Height = null)
 {
@@ -195,7 +197,8 @@ public static class RenameEngine
 
                 var row = new RenameRow(file, name,
                     changed ? RenameStatus.Ready : RenameStatus.Unchanged,
-                    changed ? "Listo" : "Sin cambios")
+                    changed ? (TemplateUses(options.Template, "contenido") && file.Document is not null
+                        ? $"{file.Document.Method}. Extracto: {file.Document.Summary}" : "Listo") : "Sin cambios")
                 {
                     Snapshot = snapshot,
                     OutputFolder = outputFolder
@@ -318,6 +321,16 @@ public static class RenameEngine
                 switch (key)
                 {
                     case "nombre": return stem;
+                    case "imagen":
+                        if (file.Vision is null) throw new FormatException("Pulsa Analizar imágenes para generar una propuesta visual.");
+                        if (file.Vision.Error.Length > 0) throw new FormatException(file.Vision.Error);
+                        if (file.Vision.Snapshot != FileStamp.Capture(file.FullPath)) throw new FormatException("La imagen cambió desde el análisis; vuelve a analizarla.");
+                        return CleanMetadata(file.Vision.Description);
+                    case "contenido":
+                        if (file.Document is null) throw new FormatException("Pulsa Analizar documentos para preparar una propuesta.");
+                        if (file.Document.Error.Length > 0) throw new FormatException(file.Document.Error);
+                        if (file.Document.Snapshot != FileStamp.Capture(file.FullPath)) throw new FormatException("El documento cambió desde el análisis; vuelve a analizarlo.");
+                        return CleanMetadata(file.Document.SuggestedName);
                     case "ext": return extension.Length == 0 ? "" : extension[1..];
                     case "n":
                         numberInTemplate = true;

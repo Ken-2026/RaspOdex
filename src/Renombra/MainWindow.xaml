@@ -39,6 +39,7 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
+        <StackPanel>
         <Border Background="#172345" Padding="22,16">
             <DockPanel LastChildFill="True">
                 <Border DockPanel.Dock="Right" Padding="9,5" CornerRadius="5"
@@ -59,6 +60,16 @@
             </DockPanel>
         </Border>
 
+        <Border Background="#101C30" Padding="20,8" BorderBrush="{StaticResource Line}" BorderThickness="0,0,0,1">
+            <DockPanel x:Name="ModeSelector">
+                <TextBlock Text="Elegir modo:" VerticalAlignment="Center" FontWeight="SemiBold" Margin="0,0,14,0" />
+                <StackPanel Orientation="Horizontal">
+                    <Button x:Name="PhotoModeButton" Content="Fotos y multimedia" Click="OnPhotoMode" Margin="0,0,8,0" />
+                    <Button x:Name="DocumentModeButton" Content="Documentos · PDF y Word" Click="OnDocumentMode" />
+                </StackPanel>
+            </DockPanel>
+        </Border>
+        </StackPanel>
         <Border Grid.Row="1" Background="#152138" BorderBrush="{StaticResource Line}"
                 BorderThickness="0,0,0,1" Padding="20,10">
             <DockPanel x:Name="FilesToolbar">
@@ -78,7 +89,7 @@
                             <MenuItem Header="Viaje con país y fecha" Click="OnUseTravelTemplate" />
                             <MenuItem Header="Restablecer reglas" Click="OnResetRules" />
                         </MenuItem>
-                        <MenuItem Header="_Ubicación" Foreground="{StaticResource Ink}">
+                        <MenuItem x:Name="LocationMenu" Header="_Ubicación" Foreground="{StaticResource Ink}">
                             <MenuItem Header="Buscar sin Internet con GeoNames" Click="OnLookupLocationOffline" />
                             <MenuItem Header="Resolver cada foto sin Internet (GeoNames)" Click="OnLookupAllLocationsOffline" />
                             <MenuItem Header="Buscar en línea con OpenStreetMap…" Click="OnLookupLocation" />
@@ -141,9 +152,47 @@
                                       ToolTip="Aplica la búsqueda, la plantilla y el cambio de mayúsculas al nombre completo." />
                         </UniformGrid>
 
+                        <StackPanel x:Name="VisionControls">
                         <Border Height="1" Background="{StaticResource Line}" Margin="0,7,0,12" />
+                        <TextBlock Text="Reconocer contenido de fotos" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,6" />
+                        <TextBlock Text="Una IA local propone palabras para lo que ve, incluso sin EXIF. Revísalas: puede equivocarse. JPG, PNG, BMP y TIFF."
+                                   TextWrapping="Wrap" Foreground="{StaticResource Muted}" Margin="0,0,0,8" />
+                        <CheckBox x:Name="PhotoGemini" Content="Usar Gemini en línea" ToolTip="Envía una miniatura a Google tras pedirte confirmación." />
+                        <CheckBox x:Name="PhotoReadText" Content="Añadir texto visible (OCR)" ToolTip="Usa Tesseract y puede incluir en el nombre palabras que aparezcan en la imagen." />
+                        <Button Content="Preparar IA visual…" Click="OnPrepareVision" Margin="0,0,0,7" />
+                        <Button Content="Analizar imágenes" Click="OnAnalyzePhotos" Margin="0,0,0,7" />
+                        <Button Content="Editar propuesta seleccionada…" Click="OnEditPhotoDescription" Margin="0,0,0,9" />
+                        </StackPanel>
+                        <StackPanel x:Name="DocumentControls" Visibility="Collapsed">
+                        <Border Height="1" Background="{StaticResource Line}" Margin="0,7,0,12" />
+                        <TextBlock Text="Documentos · PDF y Word" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,6" />
+                        <TextBlock Text="Analiza hasta las 3 primeras páginas de cada PDF o el texto de un DOCX. El nombre es una sugerencia: revísala antes de renombrar."
+                                   TextWrapping="Wrap" Foreground="{StaticResource Muted}" Margin="0,0,0,8" />
+                        <TextBlock Text="Prioridad para el nombre" FontWeight="SemiBold" Margin="0,0,0,4" />
+                        <CheckBox x:Name="DocOrg" Content="1. Organismo o empresa" IsChecked="True" />
+                        <CheckBox x:Name="DocType" Content="2. Tipo de documento" IsChecked="True" />
+                        <CheckBox x:Name="DocSubject" Content="3. Asunto concreto" IsChecked="True" />
+                        <CheckBox x:Name="DocPerson" Content="4. Persona" IsChecked="True" />
+                        <CheckBox x:Name="DocReference" Content="5. Expediente o factura" />
+                        <CheckBox x:Name="DocId" Content="6. DNI, NIE o NIF" ToolTip="Desmarcado por privacidad; actívalo solo si quieres incluirlo en el nombre." />
+                        <CheckBox x:Name="DocDate" Content="7. Fecha del documento" />
+                        <CheckBox x:Name="DocGemini" Content="Usar Gemini en línea" ToolTip="Envía el texto extraído a Google tras pedirte confirmación." />
+                        <CheckBox x:Name="DocAi" Content="Usar IA local, si está disponible" IsChecked="True" ToolTip="Analiza el texto en este ordenador. Si no está disponible, se usan reglas locales." />
+                        <ComboBox x:Name="DocModel" SelectedIndex="0" Margin="0,3,0,3" ToolTip="El modelo ligero ocupa menos memoria. Hay que instalar por separado el modelo elegido.">
+                            <ComboBoxItem Content="IA equilibrada · 1,7B" />
+                            <ComboBoxItem Content="IA ligera · 0,6B" />
+                        </ComboBox>
+                        <Button Content="Preparar o instalar IA…" Click="OnPrepareLocalAi" Margin="0,2,0,7"
+                                ToolTip="Instala Ollama si es necesario y descarga el modelo elegido. Requiere Internet." />
+                        <TextBlock Text="Los cambios se aplican al volver a analizar. También puedes ajustar cada documento por separado."
+                                   TextWrapping="Wrap" Foreground="{StaticResource Muted}" FontSize="12" Margin="0,4,0,7" />
+                        <Button Content="Analizar documentos" Click="OnAnalyzeDocuments" Margin="0,0,0,8"
+                                ToolTip="Lectura local; los PDF escaneados se leen con OCR. No cambia los documentos." />
+                        <Button Content="Elegir datos de la fila seleccionada…" Click="OnChooseDocumentFields" Margin="0,0,0,8"
+                                ToolTip="Revisa y elige los datos detectados para un documento concreto." />
+                        </StackPanel>
                         <Label Content="_Plantilla" Target="{Binding ElementName=TemplateBox}" Style="{StaticResource FieldLabel}" />
-                        <Button Content="Automático · fecha y nombre" Click="OnAutomatic" Style="{StaticResource PrimaryButton}"
+                        <Button x:Name="PhotoAutomaticButton" Content="Automático · fecha y nombre" Click="OnAutomatic" Style="{StaticResource PrimaryButton}"
                                 ToolTip="Usa fecha y hora de captura, o de modificación si falta; añade un número solo para resolver coincidencias." Margin="0,0,0,7" />
                         <CheckBox x:Name="UniqueCheck" Content="Evitar nombres repetidos" Click="OnRuleClick"
                                   ToolTip="Añade _001, _002… si el nombre ya existe o se repite en el lote." />
@@ -170,6 +219,9 @@
                         <Menu Background="Transparent" Margin="0,0,0,7">
                             <MenuItem Header="Añadir campo explicado ▾" Foreground="{StaticResource Ink}">
                                 <MenuItem Header="Nombre original — nombre sin extensión" Tag="{}{nombre}" Click="OnFieldMenu" />
+                                <MenuItem x:Name="VisionTokenMenu" Header="Imagen — propuesta del análisis visual" Tag="{}{imagen}" Click="OnFieldMenu" />
+                                <MenuItem x:Name="DocumentTokenMenu" Visibility="Collapsed" Header="Contenido — propuesta al analizar documentos" Tag="{}{contenido}" Click="OnFieldMenu" />
+                                <MenuItem x:Name="PhotoFieldsMenu" Header="Campos de fotografía">
                                 <MenuItem Header="Lugar — texto fijo del lote" Tag="{}{lugar}" Click="OnFieldMenu" />
                                 <MenuItem Header="País — del GPS o del lote" Tag="{}{pais}" Click="OnFieldMenu" />
                                 <MenuItem Header="Ciudad — localidad obtenida del GPS" Tag="{}{ciudad}" Click="OnFieldMenu" />
@@ -191,10 +243,11 @@
                                 <MenuItem Header="Distancia focal" Tag="{}{focal}" Click="OnFieldMenu" />
                                 <MenuItem Header="Ancho en píxeles" Tag="{}{ancho}" Click="OnFieldMenu" />
                                 <MenuItem Header="Alto en píxeles" Tag="{}{alto}" Click="OnFieldMenu" />
+                                </MenuItem>
                                 <MenuItem Header="Número correlativo" Tag="{}{n}" Click="OnFieldMenu" />
                             </MenuItem>
                         </Menu>
-                        <WrapPanel Margin="0,0,0,3">
+                        <WrapPanel x:Name="PhotoQuickFields" Margin="0,0,0,3">
                             <Button Content="Nombre" Tag="{}{nombre}" Style="{StaticResource TokenButton}" Click="OnToken"
                                     ToolTip="Nombre tras buscar y reemplazar, sin extensión." />
                             <Button Content="Número" Tag="{}{n}" Style="{StaticResource TokenButton}" Click="OnToken"
@@ -216,6 +269,7 @@
                             <Button Content="{}{indicador}" Style="{StaticResource TokenButton}" Click="OnToken"
                                     ToolTip="Indicador personalizado del país o viaje. Ejemplo: IND." />
                         </WrapPanel>
+                        <StackPanel x:Name="PhotoControls">
                         <Label Content="Ubicación para este lote" Target="{Binding ElementName=LocationBox}" Style="{StaticResource FieldLabel}" />
                         <TextBox x:Name="LocationBox" AutomationProperties.Name="Lugar para este lote" TextChanged="OnRuleChanged"
                                  ToolTip="Escribe un lugar fijo, como Indonesia, Bali o IND. Se inserta con {lugar}."
@@ -265,6 +319,7 @@
                             </StackPanel>
                         </Expander>
 
+                        </StackPanel>
                         <Border Height="1" Background="{StaticResource Line}" Margin="0,6,0,12" />
                         <Label Content="_Mayúsculas y minúsculas" Target="{Binding ElementName=CaseBox}" Style="{StaticResource FieldLabel}" />
                         <ComboBox x:Name="CaseBox" AutomationProperties.Name="Mayúsculas y minúsculas"

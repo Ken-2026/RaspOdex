@@ -59,7 +59,7 @@ public static class LocationLookup
     private static HttpClient CreateClient()
     {
         var client = new HttpClient { BaseAddress = new Uri("https://nominatim.openstreetmap.org/"), Timeout = TimeSpan.FromSeconds(15) };
-        client.DefaultRequestHeaders.UserAgent.ParseAdd("Renombra/1.2 (https://github.com/Ken-2026/Renombra)");
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("RaspOdex/1.4 (https://github.com/Ken-2026/RaspOdex)");
         client.DefaultRequestHeaders.AcceptLanguage.ParseAdd("es");
         return client;
     }

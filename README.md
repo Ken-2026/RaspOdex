@@ -1,5 +1,7 @@
 # RaspOdex
 
+> **Rama de desarrollo:** los modos de análisis visual y de documentos de esta rama son experimentales. La versión descargable y probada para fotos sigue siendo [1.4.0](https://github.com/Ken-2026/RaspOdex/releases/tag/v1.4.0). Consulta [el estado de las pruebas](docs/ESTADO-IA-EXPERIMENTAL.md) antes de ejecutar este código.
+
 ![Ilustración de RaspOdex: una carpeta azul con su símbolo y fotografías](docs/imagenes/raspodex-portada.png)
 
 **Tus fotos tienen una historia. Dales un nombre que te ayude a encontrarlas.**
